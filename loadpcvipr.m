@@ -1,4 +1,4 @@
-function handles = loadpcvipr(handles)
+function [directory, nframes, res, fov, timeres, v, MAG, timeMIP, vMean] = loadpcvipr()
 % function [directory, nframes, res, fov, timeres, v, MAG, timeMIP,vMean] = loadpcvipr()
 % Get and load input directory
 
@@ -97,17 +97,6 @@ function handles = loadpcvipr(handles)
     timeMIP = calc_angio(MAG, vMean, pcviprheader.VENC);
 
     % clearvars -except directory nframes res fov timeres v MAG timeMIP
-    
-    handles = struct();
-    handles.directory = directory;
-    handles.nframes = nframes;
-    handles.res = res;
-    handles.fov = fov;
-    handles.timeres = timeres;
-    handles.v = v;
-    handles.MAG = MAG;
-    handles.timeMIP = timeMIP;
-    handles.vMean = vMean;
     
     fprintf('Load Data finished\n');
     toc
