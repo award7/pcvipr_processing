@@ -1,7 +1,7 @@
-classdef VesselSelectionApp < matlab.apps.AppBase & MAGrgb
+classdef VesselSelectionApp < matlab.apps.AppBase % & MAGrgb
 
     % Properties that correspond to app components
-    properties (Access = public)
+    properties (GetAccess = public, SetAccess = private)
         UIFigure                    matlab.ui.Figure
         DoneButton                  matlab.ui.control.Button
         CancelButton                matlab.ui.control.Button
@@ -12,24 +12,6 @@ classdef VesselSelectionApp < matlab.apps.AppBase & MAGrgb
         XLabel                      matlab.ui.control.Label
         YLabel                      matlab.ui.control.Label
         ZLabel                      matlab.ui.control.Label
-        SagittalImage;
-        CoronalImage;
-        AxialImage;
-        MN = 1;
-        MX1;
-        MX2;
-        MX3;
-        XCoordinate;
-        YCoordinate;
-        ZCoordinate;
-        XSlice;
-        YSlice;
-        ZSlice;
-    end
-    
-    % Properties that correspond to app components (con't)
-    properties (Access = private, Hidden)
-        CenterlineToolApp           CenterlineToolApp;
         ParentGridLayout            matlab.ui.container.GridLayout
         ChildGridLayout1            matlab.ui.container.GridLayout
         ChildGridLayout2            matlab.ui.container.GridLayout
@@ -58,6 +40,21 @@ classdef VesselSelectionApp < matlab.apps.AppBase & MAGrgb
         SagittalCrosshairs;
         CoronalCrosshairs;
         AxialCrosshairs;
+        
+        SagittalImage;
+        CoronalImage;
+        AxialImage;
+        MN = 1;
+        MX1;
+        MX2;
+        MX3;
+        XCoordinate;
+        YCoordinate;
+        ZCoordinate;
+        XSlice;
+        YSlice;
+        ZSlice;
+        CenterlineToolApp;
     end
     
     % App creation and deletion
@@ -73,7 +70,7 @@ classdef VesselSelectionApp < matlab.apps.AppBase & MAGrgb
             app.registerApp(app.UIFigure)
 
             % Execute the startup function
-            app.runStartupFcn(@(app)startupFcn(app, varargin{:}))
+            % app.runStartupFcn(@(app)startupFcn(app, varargin{:}))
             
             if nargout == 0
                 clear app
@@ -823,6 +820,7 @@ classdef VesselSelectionApp < matlab.apps.AppBase & MAGrgb
             % important so that it deletes any previous data associated
             % with the vessel
             app.CenterlineToolApp.VIPR.Vessel.(vessel) = struct;
+            app.CenterlineToolApp.VIPR.Vessel.(vessel).Vessel = vessel;
             app.CenterlineToolApp.VIPR.Vessel.(vessel).XCoordinate = app.XCoordinate;
             app.CenterlineToolApp.VIPR.Vessel.(vessel).YCoordinate = app.YCoordinate;
             app.CenterlineToolApp.VIPR.Vessel.(vessel).ZCoordinate = app.ZCoordinate;

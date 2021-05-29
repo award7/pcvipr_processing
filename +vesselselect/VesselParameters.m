@@ -1,6 +1,6 @@
-classdef calculateParameters < handle
+classdef VesselParameters < handle
     %{
-    The function calculates flow, calculate_diameter and maximum Velocity along vessels
+    The function calculates flow, calcDiameter and maximum Velocity along vessels
     in cross sections with normal in the vessel direction.
 
     INPUT
@@ -20,60 +20,65 @@ classdef calculateParameters < handle
     Updated for OOP: Aaron Ward, 11/05/2020
     %}
     
-    properties (Access = public)
-        Area;
-        Diameter;
-        MeanVelocity;
-        MaxVelocity;
-        FlowPerHeartCycle;
-        WallShearStress;
-        PulsatilityIndex;
-        FlowPulsatile;
+    properties (GetAccess = public, SetAccess = private)
+        Area                (1,:) double {mustBeNumeric};
+        CardiacTimeAbs      (1,:) double {mustBeNumeric, mustBeNonnegative};
+        CardiacTimeRel      (1,:) double {mustBeNumeric, mustBeNonnegative};
+        Diameter            (1,:) double {mustBeNumeric};
+        FlowPerHeartCycle   (1,:) double {mustBeNumeric};
+        FlowPerMin          (1,:) double {mustBeNumeric};
+        FlowPulsatile       (1,:) double {mustBeNumeric};
+        HeartRate           (1,1) double {mustBeNumeric, mustBeNonnegative};
+        MaxVelocity         (1,:) double {mustBeNumeric};
+        MeanVelocity        (1,:) double {mustBeNumeric};
+        PulsatilityIndex    (1,:) double {mustBeNumeric};
+        Voxels              (1,:) uint16 {mustBeNumeric, mustBeNonnegative};
+        WallShearStress     (1,:) double {mustBeNumeric};
     end
     
-    properties (Access = private, Transient)
+    properties (Access = public, Transient)
         % distance backward and frontward from reference point in direction estimation
         % number of points to use for cross section extraction
-        % extracted orthogonal cross sections will be based on k+d and k-d
-        d = 4;
+        % extracted orthogonal cross sections will be based on k+Distance and k-Distance
+        Distance            (1,1) {mustBeInteger} = 4;
         
         % cross section radial size
-        r = 6;
-        SE = strel('square', 4);
+        Radius              (1,1) {mustBeInteger} = 6;
         
         % in kg/(m s^)
-        Viscosity = 0.0045;
+        Viscosity           (1,1) {mustBeNumeric, mustBeNonnegative} = 0.0045;
         
-        % just to make calculate_diameter calculation work
-        N = 1;
+        % just to make calcDiameter calculation work
+        % N (1,1) {mustBeInteger} = 1;
     end
     
-    methods
+    methods (Access = public)
+        
         % constructor
-        function self = calculateParameters()
+        function self = VesselParameters()
         end
         
-        function s = main(self, VIPR, branchActual, varargin)
+        function calculateParameters(self, VIPR, branchActual, varargin)
             branchSize = size(branchActual, 1);
             if branchSize < 9
-                self.d = 3;
+                self.Distance = 3;
             end
             
             for k = 1:branchSize
-                direction = self.extract_normal2cross(k, branchActual);
-                angle1 = self.xy_angle(direction);
-                angle2 = self.yz_angle(direction);
-                vSubset = self.velocity_subsets(k, VIPR.Velocity, branchActual);
-                vCrossection = self.rotate_subsets(vSubset, angle1, angle2, VIPR.NoFrames);
-                vTimeFrame = self.temporal_means(direction, vCrossection);
-                timeMIPCrossSection = self.rotate_mip(k, branchActual, VIPR.TimeMIP, angle1, angle2);
+                direction = self.extractNormal2Cross(k, branchActual);
+                angle1 = self.xyAngle(direction);
+                angle2 = self.yzAngle(direction);
+                vSubset = self.velocitySubsets(k, VIPR.Velocity, branchActual);
+                vCrossection = self.rotateSubsets(vSubset, angle1, angle2, VIPR.NoFrames);
+                vTimeFrame = self.temporalMeans(direction, vCrossection);
+                timeMIPCrossSection = self.rotateMip(k, branchActual, VIPR.TimeMIP, angle1, angle2);
                 [clust, ctrs, idx] = self.cluster(vTimeFrame, timeMIPCrossSection);
-                segment = self.dilate_segment(timeMIPCrossSection, idx);
+                segment = self.dilateSegment(timeMIPCrossSection, idx);
 
                 if nargin > 3
                     try
                         % viewKmeansClusters = varargin{1};
-                        self.view_kmeans(k, clust, ctrs, timeMIPCrossSection, segment, vTimeFrame);
+                        self.viewKmeans(k, clust, ctrs, timeMIPCrossSection, segment, vTimeFrame);
                     catch ME
                         switch ME.identifier
                             case 'MATLAB:badsubscript'
@@ -81,61 +86,77 @@ classdef calculateParameters < handle
                         end
                     end
                 end
-              
-                self.calculate_area(k, segment, VIPR.FOV, VIPR.Resolution);
-                self.calculate_diameter(k);
+                
+                self.calcArea(k, segment, VIPR.FOV, VIPR.Resolution);
+                self.calcDiameter(k);
                 maxVelFrame = zeros(1, VIPR.NoFrames);
+                
                 for j = 1:VIPR.NoFrames
-                    vTimeFrame = segment.* interp2(0.1* (...
-                        direction(1)* vCrossection(:,:,1,1,j)+ ...
-                        direction(2)* vCrossection(:,:,1,2,j)+ ...
-                        direction(3)* vCrossection(:,:,1,3,j)), 2);
+                    vTimeFrame = segment .* interp2(0.1* (...
+                        direction(1) * vCrossection(:,:,1,1,j) + ...
+                        direction(2) * vCrossection(:,:,1,2,j) + ...
+                        direction(3) * vCrossection(:,:,1,3,j)), 2);
                     ind = find(vTimeFrame);
-                    self.calculate_flow_pulsatile(k, j, vTimeFrame, ind);
+                    self.calcFlowPulsatile(k, j, vTimeFrame, ind);
                     maxVelFrame(j) = max(max(vTimeFrame));
                     meanVelFrame(j) = mean(vTimeFrame(ind));
-                    wssFrame(k, j) = self.calculate_wss_per_frame(k, j, maxVelFrame);
+                    wssFrame(k, j) = self.calcWssPerFrame(k, j, maxVelFrame);
                 end
-                self.calculate_max_velocity(k, maxVelFrame);
-                self.calculate_mean_velocity(k, meanVelFrame);
-                self.calculate_wss_simple_avg(k, wssFrame, VIPR.NoFrames);
-                self.calculate_pulsatility_index(k);
+                
+                self.calcMaxVelocity(k, maxVelFrame);
+                self.calcMeanVelocity(k, meanVelFrame);
+                self.calcWssSimpleAvg(k, wssFrame, VIPR.NoFrames);
+                self.calcPulsatilityIndex(k);
             end
-            self.calculate_flow_per_heart_cycle(VIPR.NoFrames);
-            s = self.get_as_struct();
+            
+            self.calcFlowPerHeartCycle(VIPR.NoFrames);
+            self.calcCardiacTimeAbs(VIPR.TimeResolution, VIPR.NoFrames)
+            self.calcCardiacTimeRel();
+            self.calcHr();
+            self.calcFlowPerMin();
+            self.getVoxelList();
         end
         
-        function s = get_as_struct(self)
+        function s = getAsStruct(self)
             s.Area = self.Area;
+            s.CardiacTimeAbs = self.CardiacTimeAbs;
+            s.CardiacTimeRel = self.CardiacTimeRel;
             s.Diameter = self.Diameter;
+            s.FlowPerHeartCycle = self.FlowPerHeartCycle;
+            s.FlowPerMin = self.FlowPerMin;
+            s.FlowPulsatile = self.FlowPulsatile;
+            s.HeartRate = self.HeartRate;
             s.MeanVelocity = self.MeanVelocity;
             s.MaxVelocity = self.MaxVelocity;
-            s.FlowPerHeartCycle = self.FlowPerHeartCycle;
-            s.WallShearStress = self.WallShearStress;
             s.PulsatilityIndex = self.PulsatilityIndex;
-            s.FlowPulsatile = self.FlowPulsatile;
+            s.Voxels = self.Voxels;
+            s.WallShearStress = self.WallShearStress;
         end
         
-        function direction = extract_normal2cross(self, k, branchActual)
+    end
+    
+    methods (Access = private)
+        
+        function direction = extractNormal2Cross(self, k, branchActual)
             % extract normal to cross-section
-            if k < self.d + 1
-                direction = branchActual(k + self.d, 1:3) - branchActual(k, 1:3);
-            elseif k >= size(branchActual, 1) - self.d
-                direction = branchActual(k, 1:3)- branchActual(k - self.d, 1:3);
+            if k < self.Distance + 1
+                direction = branchActual(k + self.Distance, 1:3) - branchActual(k, 1:3);
+            elseif k >= size(branchActual, 1) - self.Distance
+                direction = branchActual(k, 1:3)- branchActual(k - self.Distance, 1:3);
             else
-                direction = branchActual(k + self.d, 1:3) - branchActual(k - self.d, 1:3);
+                direction = branchActual(k + self.Distance, 1:3) - branchActual(k - self.Distance, 1:3);
             end
             direction = direction / norm(direction);
         end
         
-        function vSubset = velocity_subsets(self, k, v, branchActual)
+        function vSubset = velocitySubsets(self, k, v, branchActual)
             vSubset = double(v(...
-                branchActual(k,1)-self.r:branchActual(k,1)+self.r, ...
-                branchActual(k,2)-self.r:branchActual(k,2)+self.r, ...
-                branchActual(k,3)-self.r:branchActual(k,3)+self.r, :, :));
+                branchActual(k,1)-self.Radius:branchActual(k,1)+self.Radius, ...
+                branchActual(k,2)-self.Radius:branchActual(k,2)+self.Radius, ...
+                branchActual(k,3)-self.Radius:branchActual(k,3)+self.Radius, :, :));
         end
         
-        function vCrossection = rotate_subsets(self, vSubset, angle1, angle2, NoFrames)
+        function vCrossection = rotateSubsets(self, vSubset, angle1, angle2, NoFrames)
             % rotate subsets
             B = imrotate(vSubset, -angle1, 'bilinear', 'crop');
             D = permute(B, [1 3 2 4 5]);
@@ -143,69 +164,74 @@ classdef calculateParameters < handle
             F = imrotate(D, (90-angle2), 'bilinear', 'crop');
             H = ipermute(F, [1 3 2 4 5]);
 
-            vCrossection = zeros(2*self.r+1, 2*self.r+1, 1, 3, NoFrames);
-            vCrossection(:,:,1,1,:) = H(:,:,self.r+1,1,:);
-            vCrossection(:,:,1,2,:) = H(:,:,self.r+1,2,:);
-            vCrossection(:,:,1,3,:) = H(:,:,self.r+1,3,:);
+            vCrossection = zeros(2*self.Radius+1, 2*self.Radius+1, 1, 3, NoFrames);
+            vCrossection(:,:,1,1,:) = H(:,:,self.Radius+1,1,:);
+            vCrossection(:,:,1,2,:) = H(:,:,self.Radius+1,2,:);
+            vCrossection(:,:,1,3,:) = H(:,:,self.Radius+1,3,:);
         end
 
-        function timeMIPCrossSection = rotate_mip(self, k, branchActual, timeMIP, angle1, angle2)
+        function timeMIPCrossSection = rotateMip(self, k, branchActual, timeMIP, angle1, angle2)
             % Do the same extraction and rotation for TimeMIP
             timeMIPSubset = timeMIP(...
-                branchActual(k,1)-self.r : branchActual(k,1)+self.r, ...
-                branchActual(k,2)-self.r : branchActual(k,2)+self.r, ...
-                branchActual(k,3)-self.r : branchActual(k,3)+self.r);
+                branchActual(k,1)-self.Radius : branchActual(k,1)+self.Radius, ...
+                branchActual(k,2)-self.Radius : branchActual(k,2)+self.Radius, ...
+                branchActual(k,3)-self.Radius : branchActual(k,3)+self.Radius);
             
             H = imrotate(timeMIPSubset, -angle1, 'bilinear', 'crop');
             I = permute(H, [1 3 2]);
             J = imrotate(I, (90-angle2), 'bilinear', 'crop');
             K = ipermute(J, [1 3 2]);
             
-            timeMIPCrossSection = K(:,:,self.r+1);
+            timeMIPCrossSection = K(:,:,self.Radius+1);
             timeMIPCrossSection = interp2(timeMIPCrossSection,2);
             timeMIPCrossSection(...
                 round(length(timeMIPCrossSection)/2)-1:round(length(timeMIPCrossSection)/2)+1,...
                 round(length(timeMIPCrossSection)/2)-1:round(length(timeMIPCrossSection)/2)+1) = max(timeMIPCrossSection(:));
         end
  
-        function segment = dilate_segment(self, timeMIPCrossSection, idx)
+        function segment = dilateSegment(self, timeMIPCrossSection, idx)
+            SE = strel('square', 4);
             segment = zeros(size(timeMIPCrossSection));
             segment(idx==2) = 1;
             if segment(round(numel(segment(:,1))/2), round(numel(segment(1,:))/2)) == 0
                 segment = -1*segment+1;
             end
-            segment = imerode(segment, self.SE);
+            segment = imerode(segment, SE);
             segment = self.region_growing(segment, round(length(segment)/2), round(length(segment)/2));
-            segment = imdilate(segment, self.SE);
+            segment = imdilate(segment, SE);
         end
         
-        function calculate_area(self, k, segment, FOV, Resolution)
+    end
+    
+    methods (Access = private)
+        
+        function calcArea(self, k, segment, FOV, Resolution)
             % in cm^2
-            self.Area(k) = sum(segment(:)) * (FOV/Resolution)^2 * (2*self.r+1)^2 / (8*self.r+1)^2;
+            self.Area(k) = sum(segment(:)) * (FOV/Resolution)^2 * (2*self.Radius+1)^2 / (8*self.Radius+1)^2;
         end
         
-        function calculate_diameter(self, k)
+        function calcDiameter(self, k)
             self.Diameter(k) = 2*sqrt(self.Area(k)/pi);
         end
         
-        function calculate_max_velocity(self, k, maxVelFrame)
+        function calcMaxVelocity(self, k, maxVelFrame)
             % max Velocity, in cm/s
             self.MaxVelocity(k) = max(maxVelFrame);
         end
         
-        function calculate_mean_velocity(self, k, meanVelFrame)
+        function calcMeanVelocity(self, k, meanVelFrame)
             self.MeanVelocity(k) = mean(meanVelFrame);
         end
         
-        function calculate_flow_pulsatile(self, k, j, vTimeFrame, ind)
+        function calcFlowPulsatile(self, k, j, vTimeFrame, ind)
             self.FlowPulsatile(k, j) = mean(vTimeFrame(ind)) * self.Area(k);
         end
         
-        function calculate_wss_simple_avg(self, k, wssFrame, NoFrames)
+        function calcWssSimpleAvg(self, k, wssFrame, NoFrames)
             self.WallShearStress(k) = real(sum(wssFrame(k,:)) / NoFrames);
         end
         
-        function wssFrame = calculate_wss_per_frame(self, k, j, maxVelFrame)
+        function wssFrame = calcWssPerFrame(self, k, j, maxVelFrame)
             % Simple WallShearStress calculation based on the max Velocity and the Diameter.
             % Assumes parabolic flow profile
             % in Pa
@@ -213,21 +239,41 @@ classdef calculateParameters < handle
                 sqrt(2 * pi * maxVelFrame(j) * 0.01 / (self.FlowPulsatile(k,j) * 1e-6));
         end
         
-        function calculate_pulsatility_index(self, k)
+        function calcPulsatilityIndex(self, k)
             self.PulsatilityIndex(k) = (max(self.FlowPulsatile(k,:)) - min(self.FlowPulsatile(k,:))) / mean(self.FlowPulsatile(k,:));
         end
         
-        function calculate_flow_per_heart_cycle(self, NoFrames)
+        function calcFlowPerHeartCycle(self, NoFrames)
             % calculate flow in ml/s. go from mm^2 to cm^2 with the factor 1e-2, and
             % from mm/s to cm/s with the factor 1e-1
             self.FlowPerHeartCycle = sum(self.FlowPulsatile, 2)' / (NoFrames);
         end
         
+        function calcFlowPerMin(self)
+            self.FlowPerMin = self.FlowPerHeartCycle * self.HeartRate;
+        end
+        
+        function calcCardiacTimeAbs(self, timeResolution, noFrames)
+            self.CardiacTimeAbs = timeResolution / 1000 * linspace(1, noFrames, noFrames);
+        end
+        
+        function calcCardiacTimeRel(self)
+            self.CardiacTimeRel = round(self.CardiacTimeAbs ./ self.CardiacTimeAbs(:, end) * 100, 0);
+        end
+        
+        function calcHr(self)
+            self.HeartRate = 60 / self.CardiacTimeAbs(end);
+        end
+        
+        function getVoxelList(self)
+            self.Voxels = linspace(1, self.Area, self.Area);
+        end
+        
     end
       
-    methods(Static)
+    methods(Access = private, Static)
 
-        function angle1 = xy_angle(direction)
+        function angle1 = xyAngle(direction)
             % x-y angle in degrees
             if direction(1) == 0 && direction(2) == 0
                 angle1 = 0;
@@ -240,7 +286,7 @@ classdef calculateParameters < handle
             end
         end
         
-        function angle2 = yz_angle(direction)
+        function angle2 = yzAngle(direction)
             % y-z angle in degrees
             if direction(2) == 0 && direction(3) == 0
                 angle2 = 0;
@@ -249,7 +295,7 @@ classdef calculateParameters < handle
             end
         end
             
-        function vTimeFrame = temporal_means(direction, vCrossection)
+        function vTimeFrame = temporalMeans(direction, vCrossection)
             % Extract temporal mean of sum-squared Velocity cross section,
             % i.e. the temporal mean of the speed image
             vTimeFrame = interp2(0.1*(...
@@ -378,12 +424,12 @@ classdef calculateParameters < handle
             J = J > 1;
         end
         
-        function view_kmeans(k, clust, ctrs, timeMIPCrossSection, segment, vTimeFrame)
+        function viewKmeans(k, clust, ctrs, timeMIPCrossSection, segment, vTimeFrame)
             disp(k)
             figure(4); 
             clf;
             subplot(2,2,3);
-            plot(clust(idx==1, 1), clust(idx==1, 2), 'r.', 'MarkerSize', 12)
+            plot(clust(idx==1, 1), clust(idx==1, 2), 'Radius.', 'MarkerSize', 12)
             hold on
             
             plot(clust(idx==2, 1), clust(idx==2, 2), 'b.', 'MarkerSize', 12)

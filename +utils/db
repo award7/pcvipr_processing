@@ -1,0 +1,8 @@
+---
+name: Schrage_Lab_DB
+url: msss.url
+
+# uses network authentication, so no username or password needed
+auth:
+    - ''
+    - ''

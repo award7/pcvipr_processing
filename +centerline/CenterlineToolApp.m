@@ -1,7 +1,16 @@
-classdef CenterlineToolApp < matlab.apps.AppBase
+classdef CenterlineToolApp < matlab.apps.AppBase % & PropertyValidation
 
+    %{
+        The first step in PC VIPR post-processing
+        INPUT: None
+        OUTPUT: None
+    
+        the VIPR structure is the main data structure that will contain all necessary data for
+        the processing stream
+    %}
+    
     % Properties that correspond to app components
-    properties (Access = private, Hidden)
+    properties (Access = private)
         UIFigure                            matlab.ui.Figure
         ParentGridLayout                    matlab.ui.container.GridLayout
         ChildGridLayout1                    matlab.ui.container.GridLayout
@@ -12,7 +21,7 @@ classdef CenterlineToolApp < matlab.apps.AppBase
         DrawROIButton                       matlab.ui.control.Button
         ViewParametricMapButton             matlab.ui.control.Button
         FeatureExtractionButton             matlab.ui.control.Button
-        VesselSelectionButton                 matlab.ui.control.Button
+        VesselSelectionButton               matlab.ui.control.Button
         BackgroundPhaseCorrectionButton     matlab.ui.control.Button
         LoadDataButton                      matlab.ui.control.Button
         DataDirectoryLabel                  matlab.ui.control.Label
@@ -20,30 +29,28 @@ classdef CenterlineToolApp < matlab.apps.AppBase
         DatabaseLabel                       matlab.ui.control.Label
         SegmentVesselsButton                matlab.ui.control.Button
         LoadSavedDataButton                 matlab.ui.control.Button
-        Vasculature3DAxesTB
+        Vasculature3DAxesTB;
+    end
+    
+    properties (GetAccess = public, SetAccess = private)
+        VIPR            struct;
+        SortingCriteria (1,1) double{mustBeInteger} = 3;
+        SpurLength      (1,1) double{mustBeInteger} = 8;
     end
     
     % private properties (i.e. those that are contained in this GUI)
     properties (Access = private)
         % child GUIs
-        PhaseCorrectionApp;
-        VesselSelectionApp;
-        Vessel3DApp;
-        % ParameterPlotApp;
+        PhaseCorrectionApp  BackgroundPhaseCorrectionApp;
+        VesselSelectionApp  VesselSelectionApp;
+        Vessel3DApp         Vessel3DApp;
     end
     
-    % main data structure that will contain all necessary data for
-    % processing stream
-    properties(Access = public)
-        VIPR = struct;
-    end
-
     % App creation and deletion
     methods (Access = public)
 
         % Construct app
-        function app = CenterlineToolApp
-
+        function app = CenterlineToolApp()
             % Create UIFigure and components
             app.createComponents()
 
@@ -60,7 +67,6 @@ classdef CenterlineToolApp < matlab.apps.AppBase
 
         % Code that executes before app deletion
         function delete(app)
-
             % Delete UIFigure when app is deleted
             delete(app.UIFigure)
         end
@@ -268,6 +274,62 @@ classdef CenterlineToolApp < matlab.apps.AppBase
 
     end
 
+    % general methods, private
+    methods (Access = private)
+        
+        function viewAngiogram(app)
+            disp('View 3D Vasculature');
+            mxStart = 1; 
+            myStart = 1; 
+            mzStart = 1;
+            mxStop = app.VIPR.Resolution; 
+            myStop = app.VIPR.Resolution;
+            mzStop = app.VIPR.Resolution;
+            view(app.Vasculature3DAxes, [-.5 0 0]);
+            app.Vasculature3DAxes.DataAspectRatio = [1 1 1];
+            app.Vasculature3DAxes.XLim = [myStart myStop];
+            app.Vasculature3DAxes.YLim = [mxStart mxStop];
+            app.Vasculature3DAxes.ZLim = [mzStart mzStop];
+        end
+        
+        function makeAngiogram(app)
+            vasculaturePatch = patch(app.Vasculature3DAxes, isosurface(app.VIPR.Segment, 0.5));
+            vasculaturePatch.FaceColor = 'red';
+            vasculaturePatch.EdgeColor = 'None';
+            reducepatch(vasculaturePatch, 0.6);
+            vasculaturePatch.FaceAlpha = 0.4;
+        end
+        
+        function changeButtonState(app, state)
+            % state must be "on" or "off"
+            options = ["on", "off"];
+            if ~ismember(string(state), options)
+                ME = MException("CenterlineToolApp:StateButton:InvalidOption", "Invalid option '%s'.\nOption must be 'on' or 'off'", string(state));
+                throw(ME)
+            end
+            app.LoadDataButton.Enable = state;
+            app.DBConnectionButton.Enable = state;
+            app.BackgroundPhaseCorrectionButton.Enable = state;
+            app.DrawROIButton.Enable = state;
+            app.ViewParametricMapButton.Enable = state;
+            app.FeatureExtractionButton.Enable = state;
+            app.VesselSelectionButton.Enable = state;
+            app.SegmentVesselsButton.Enable = state;
+        end
+        
+    end
+    
+    % general methods, public
+    methods (Access = public)
+        
+        function setPhaseCorrectionParameters(app, velocityMean, angiogram, segment)
+            app.VIPR.VelocityMean = velocityMean;
+            app.VIPR.TimeMIP = angiogram;
+            app.VIPR.Segment = segment;
+        end
+        
+    end
+
     % Callbacks that handle component events
     methods (Access = private)
         %{
@@ -290,9 +352,10 @@ classdef CenterlineToolApp < matlab.apps.AppBase
                 dlg.Value = 0;
                 dlg.ShowPercentage = 'on';
                 dlg.Cancelable = 'on';
-                app.VIPR = LoadVIPR().loadVIPR(dlg);
+                data = LoadVIPR(dlg);
+                app.VIPR = data.getStruct();
             catch ME
-                if strcmp(ME.identifier, 'LoadVIPR:get_data_directory:cancel')
+                if strcmp(ME.identifier, 'LoadVIPR:getDataDirectory:cancel')
                     return;
                 else
                     rethrow(ME);
@@ -301,7 +364,6 @@ classdef CenterlineToolApp < matlab.apps.AppBase
 
             cla(app.Vasculature3DAxes);
             app.DataDirectoryLabel.Text = app.VIPR.DataDirectory;
-            app.backgroundPhaseCorrectionButtonPushed();
         end
 
         % Button pushed function: DBConnectionButton
@@ -312,12 +374,9 @@ classdef CenterlineToolApp < matlab.apps.AppBase
 
         % Button pushed function: BackgroundPhaseCorrectionButton
         function backgroundPhaseCorrectionButtonPushed(app, ~)
-            % TODO: wrap in a try...catch to ensure the buttons are re-enabled
-            % if an error occurs
             names = fieldnames(app.VIPR);
             if ~isempty(names)
                 disp('Performing background phase correction...');
-                % app.changeButtonState('off');
                 try
                     app.PhaseCorrectionApp = BackgroundPhaseCorrectionApp(app);
                     waitfor(app.PhaseCorrectionApp);
@@ -327,7 +386,6 @@ classdef CenterlineToolApp < matlab.apps.AppBase
                     delete(app.PhaseCorrectionApp);
                     rethrow(ME);
                 end
-                % app.changeButtonState('on');
             end   
         end
 
@@ -343,15 +401,10 @@ classdef CenterlineToolApp < matlab.apps.AppBase
 
         % Button pushed function: FeatureExtractionButton
         function featureExtractionButtonPushed(app, ~)
-            names = fieldnames(app.VIPR);
-            if ~isempty(names)
-                % app.changeButtonState('off');
-                sortingCriteria = 3;
-                spurLength = 8;
-                [~, branchMat, branchList, ~] = feature_extraction(sortingCriteria, spurLength, app.VIPR.VelocityMean, app.VIPR.Segment, app.VIPR.Resolution);
+            if ~isfield(app.VIPR, 'BranchMat') && ~isfield(app.VIPR, 'BranchList')
+                [~, branchMat, branchList, ~] = feature_extraction(app.SortingCriteria, app.SpurLength, app.VIPR.VelocityMean, app.VIPR.Segment, app.VIPR.Resolution);
                 app.VIPR.BranchMat = branchMat;
                 app.VIPR.BranchList = branchList;
-                % app.changeButtonState('on');
             else
                 warning('Feature extraction already performed');
             end
@@ -359,13 +412,13 @@ classdef CenterlineToolApp < matlab.apps.AppBase
 
         % Button pushed function: VesselSelectionButton
         function vesselSelectionButtonPushed(app, ~)
-%             if ~isempty(app.VesselSelectionApp)
-%                 return;
-%             elseif isobject(app.VesselSelectionApp)
-%                 if isvalid(app.VesselSelectionApp)
-%                     return;
-%                 end
-%             end
+            if ~isempty(app.VesselSelectionApp)
+                return;
+            elseif isobject(app.VesselSelectionApp)
+                if isvalid(app.VesselSelectionApp)
+                    return;
+                end
+            end
             
             if isfield(app.VIPR, 'BranchMat') && isfield(app.VIPR, 'BranchList')
                 try
@@ -384,7 +437,7 @@ classdef CenterlineToolApp < matlab.apps.AppBase
             if isfield(app.VIPR, 'Vessel')
                 if isobject(app.Vessel3DApp)
                     if isvalid(app.Vessel3DApp)
-                        delete(app.Vessel3DApp);
+                        return;
                     end
                 end
             else
@@ -430,74 +483,33 @@ classdef CenterlineToolApp < matlab.apps.AppBase
                 case 'control'
                     if strcmpi(event.Key, 'w')
                         app.uiFigureCloseRequest();
-                    elseif strcmpi(event.Key, 'e')
-                        app.changeButtonState('on');
                     end
             end
         end
 
         % Close request function: UIFigure
         function uiFigureCloseRequest(app, ~)
-            if isobject(app.PhaseCorrectionApp) && isvalid(app.PhaseCorrectionApp)
-                delete(app.PhaseCorrectionApp);
+            if isobject(app.PhaseCorrectionApp)
+                if isvalid(app.PhaseCorrectionApp)
+                    delete(app.PhaseCorrectionApp);
+                end
             end
             
-            if isobject(app.VesselSelectionApp) && isvalid(app.VesselSelectionApp)
-                delete(app.VesselSelectionApp);
+            if isobject(app.VesselSelectionApp) 
+                if isvalid(app.VesselSelectionApp)
+                    delete(app.VesselSelectionApp);
+                end
             end
             
-            if isobject(app.Vessel3DApp) && isvalid(app.Vessel3DApp)
-                delete(app.Vessel3DApp);
+            if isobject(app.Vessel3DApp)
+                if isvalid(app.Vessel3DApp)
+                    delete(app.Vessel3DApp);
+                end
             end
             
             delete(app);
         end
     
-    end
-
-    % general functions
-    methods (Access = private)
-        
-        function viewAngiogram(app)
-            disp('View 3D Vasculature');
-            mxStart = 1; 
-            myStart = 1; 
-            mzStart = 1;
-            mxStop = app.VIPR.Resolution; 
-            myStop = app.VIPR.Resolution;
-            mzStop = app.VIPR.Resolution;
-            view(app.Vasculature3DAxes, [-.5 0 0]);
-            app.Vasculature3DAxes.DataAspectRatio = [1 1 1];
-            app.Vasculature3DAxes.XLim = [myStart myStop];
-            app.Vasculature3DAxes.YLim = [mxStart mxStop];
-            app.Vasculature3DAxes.ZLim = [mzStart mzStop];
-        end
-        
-        function makeAngiogram(app)
-            vasculaturePatch = patch(app.Vasculature3DAxes, isosurface(app.VIPR.Segment, 0.5));
-            vasculaturePatch.FaceColor = 'red';
-            vasculaturePatch.EdgeColor = 'None';
-            reducepatch(vasculaturePatch, 0.6);
-            vasculaturePatch.FaceAlpha = 0.4;
-        end
-        
-        function changeButtonState(app, state)
-            % state must be "on" or "off"
-            options = ["on", "off"];
-            if ~ismember(string(state), options)
-                ME = MException("CenterlineToolApp:StateButton:InvalidOption", "Invalid option '%s'.\nOption must be 'on' or 'off'", string(state));
-                throw(ME)
-            end
-            app.LoadDataButton.Enable = state;
-            app.DBConnectionButton.Enable = state;
-            app.BackgroundPhaseCorrectionButton.Enable = state;
-            app.DrawROIButton.Enable = state;
-            app.ViewParametricMapButton.Enable = state;
-            app.FeatureExtractionButton.Enable = state;
-            app.VesselSelectionButton.Enable = state;
-            app.SegmentVesselsButton.Enable = state;
-        end
-        
     end
 
 end

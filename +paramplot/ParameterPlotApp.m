@@ -1,4 +1,4 @@
-classdef ParameterPlotApp < matlab.apps.AppBase
+classdef ParameterPlotApp < matlab.apps.AppBase & DataIO
 
     properties (Access = private)
         UIFigure                matlab.ui.Figure;
@@ -610,7 +610,7 @@ classdef ParameterPlotApp < matlab.apps.AppBase
             end
         end
         
-        function updateDataTable(app)           
+        function updateDataTable(app)
             % TODO: calculate mean and SD for each parameter
             % add to table
             
@@ -729,7 +729,6 @@ classdef ParameterPlotApp < matlab.apps.AppBase
             % tidy up/misc
             app.SaveButton.Text = ['Save ' names{1}];
             % app.RecommendedDonotusethesevoxelsLabel.Text = ['(Recommended) Do not use these voxels: [', num2str(app.handles.values.removed_voxels), ']'];
-            
         end
 
         % Value changed function: LowerVoxelSpinner
@@ -747,9 +746,20 @@ classdef ParameterPlotApp < matlab.apps.AppBase
 
         % Button pushed function: SaveButton
         function saveButtonPushed(app, ~)
-            app.save_data();
-            app.save_plots();
-            app.save_vessel();
+            app.RootDir = app.VIPR.Directory;
+            app.saveData();
+            allAxes = [app.areaAxes, ...
+                        app.diameterAxes, ... 
+                        app.meanVelAxes, ...
+                        app.maxVelAxes, ...
+                        app.flowPerBeatAxes, ...
+                        app.wssAxes, ...
+                        app.pulsatilityAxes, ...
+                        app.resolvedFlowAxes];
+            vesselName = "";
+            for k = 1:numel(allAxes)
+                app.savePlot(vesselName, allAxes(k));
+            end
         end
 
         % Value changed function: LegendSwitch

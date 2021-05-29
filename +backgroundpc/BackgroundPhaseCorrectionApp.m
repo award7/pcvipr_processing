@@ -1,54 +1,59 @@
-classdef BackgroundPhaseCorrectionApp < matlab.apps.AppBase & BackgroundPhaseCorrection
+classdef BackgroundPhaseCorrectionApp < matlab.apps.AppBase
 
     % Properties that correspond to app components
-    properties (Access = public)
-        UIFigure                    matlab.ui.Figure
-        ParentGridLayout            matlab.ui.container.GridLayout
-        ChildGridLayout1            matlab.ui.container.GridLayout
-        ChildGridLayout2            matlab.ui.container.GridLayout
-        MagAxes                     matlab.ui.control.UIAxes
-        VelocityAxes                matlab.ui.control.UIAxes
-        ImageLabel                  matlab.ui.control.Label
-        VmaxLabel                   matlab.ui.control.Label
-        CDLabel                     matlab.ui.control.Label
-        NoiseLabel                  matlab.ui.control.Label
-        FitOrderLabel               matlab.ui.control.Label
-        ImageSlider                 matlab.ui.control.Slider
-        VmaxSlider                  matlab.ui.control.Slider
-        CDSlider                    matlab.ui.control.Slider
-        NoiseSlider                 matlab.ui.control.Slider
-        FitOrderSlider              matlab.ui.control.Slider
-        ImageSpinner                matlab.ui.control.Spinner
-        VmaxSpinner                 matlab.ui.control.Spinner
-        CDSpinner                   matlab.ui.control.Spinner
-        NoiseSpinner                matlab.ui.control.Spinner
-        FitOrderSpinner             matlab.ui.control.Spinner
-        ApplyCorrectionCheckbox     matlab.ui.control.CheckBox
-        UpdateButton                matlab.ui.control.Button
-        ResetFitButton              matlab.ui.control.Button
-        DoneButton                  matlab.ui.control.Button
+    properties (Access = private)
+        UIFigure                    matlab.ui.Figure;
+        ParentGridLayout            matlab.ui.container.GridLayout;
+        ChildGridLayout1            matlab.ui.container.GridLayout;
+        ChildGridLayout2            matlab.ui.container.GridLayout;
+        MagAxes                     matlab.ui.control.UIAxes;
+        VelocityAxes                matlab.ui.control.UIAxes;
+        ImageLabel                  matlab.ui.control.Label;
+        VmaxLabel                   matlab.ui.control.Label;
+        CDLabel                     matlab.ui.control.Label;
+        NoiseLabel                  matlab.ui.control.Label;
+        FitOrderLabel               matlab.ui.control.Label;
+        ImageSlider                 matlab.ui.control.Slider;
+        VmaxSlider                  matlab.ui.control.Slider;
+        CDSlider                    matlab.ui.control.Slider;
+        NoiseSlider                 matlab.ui.control.Slider;
+        FitOrderSlider              matlab.ui.control.Slider;
+        ImageSpinner                matlab.ui.control.Spinner;
+        VmaxSpinner                 matlab.ui.control.Spinner;
+        CDSpinner                   matlab.ui.control.Spinner;
+        NoiseSpinner                matlab.ui.control.Spinner;
+        FitOrderSpinner             matlab.ui.control.Spinner;
+        ApplyCorrectionCheckbox     matlab.ui.control.CheckBox;
+        UpdateButton                matlab.ui.control.Button;
+        ResetFitButton              matlab.ui.control.Button;
+        DoneButton                  matlab.ui.control.Button;
     end
     
+    % non-GUI props
     properties (Access = private)
-        CenterlineToolApp;
-        MagImage;
-        VelocityImage;
-        Map = [gray(200); jet(10)];
+        CenterlineToolApp           CenterlineToolApp;
+        PhaseCorrection             BackgroundPhaseCorrection;
+        MagImage                    matlab.graphics.primitive.Image;
+        VelocityImage               matlab.graphics.primitive.Image;
+        Map                         (:,3) double {mustBeReal} = [gray(200); jet(10)];
     end
     
     % App creation and deletion
     methods (Access = public)
 
         % Construct app
-        function app = BackgroundPhaseCorrectionApp(varargin)
-
+        function app = BackgroundPhaseCorrectionApp(centerlineToolApp)
+            arguments
+                centerlineToolApp CenterlineToolApp;
+            end
+            
             % Create UIFigure and components
             app.createComponents();
 
             % Register the app with App Designer
             app.registerApp(app.UIFigure);
 
-            app.runStartupFcn(@(app)startupFcn(app, varargin{:}));
+            app.runStartupFcn(@(app)startupFcn(app, centerlineToolApp));
             
             if nargout == 0
                 clear app;
@@ -60,6 +65,7 @@ classdef BackgroundPhaseCorrectionApp < matlab.apps.AppBase & BackgroundPhaseCor
 
             % Delete UIFigure when app is deleted
             delete(app.UIFigure);
+        
         end
         
     end
@@ -69,55 +75,54 @@ classdef BackgroundPhaseCorrectionApp < matlab.apps.AppBase & BackgroundPhaseCor
 
         % Create UIFigure and components
         function createComponents(app)
-            app.init_figure();
-            app.init_parent_grid();
-            app.init_child_grid1();
-            app.init_child_grid2();
-            app.init_mag_axes();
-            app.init_velocity_axes();
-            app.init_image_label();
-            app.init_vmax_label();
-            app.init_cd_label();
-            app.init_noise_label();
-            app.init_fit_order_label();
-            app.init_image_slider();
-            app.init_vmax_slider();
-            app.init_cd_slider();
-            app.init_noise_slider();
-            % app.init_fit_order_slider();
-            app.init_image_spinner();
-            app.init_vmax_spinner();
-            app.init_cd_spinner();
-            app.init_noise_spinner();
-            app.init_fit_order_spinner();
-            app.init_apply_correction_cb();
-            app.init_update_button();
-            app.init_reset_fit_button();
-            app.init_done_button();
+            app.createFigure();
+            app.createParentGrid();
+            app.createChildGrid1();
+            app.createChildGrid2();
+            app.createMagAxes();
+            app.createVelocityAxes();
+            app.createImageLabel();
+            app.createVmaxLabel();
+            app.createCDLabel();
+            app.createNoiseLabel();
+            app.createFitOrderLabel();
+            app.createImageSlider();
+            app.createVmaxSlider();
+            app.createCDSlider();
+            app.createNoiseSlider();
+            app.createImageSpinner();
+            app.createVmaxSpinner();
+            app.createCDSpinner();
+            app.createNoiseSpinner();
+            app.createFitOrderSpinner();
+            app.createApplyCorrectionCheckbox();
+            app.createUpdateButton();
+            app.createResetFitButton();
+            app.createDoneButton();
             
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';
         end
            
-        function init_figure(app)
+        function createFigure(app)
             % Create UIFigure and hide until all components are created
             app.UIFigure = uifigure('Visible', 'off');
             app.UIFigure.Name = 'Background Phase Correction';
             app.UIFigure.WindowState = 'maximized';
-            app.UIFigure.CloseRequestFcn = app.createCallbackFcn(@UIFigureCloseRequest, true);
-            app.UIFigure.WindowKeyPressFcn = app.createCallbackFcn(@UIWindowKeyPressFcn, true);
+            app.UIFigure.CloseRequestFcn = app.createCallbackFcn(@uiFigureCloseRequest, true);
+            app.UIFigure.WindowKeyPressFcn = app.createCallbackFcn(@uiWindowKeyPressFcn, true);
         end
-
-        % grid that divides the figure into quadrants
-        % axes sit in column 1; buttons, sliders, etc. in column 2
-        function init_parent_grid(app)
+        
+        function createParentGrid(app)
+            % grid that divides the figure into quadrants
+            % axes sit in column 1; buttons, sliders, etc. in column 2
             app.ParentGridLayout = uigridlayout(app.UIFigure);
             app.ParentGridLayout.ColumnWidth = {'2x', '1x'};
             app.ParentGridLayout.RowHeight = {'1x', '1x'};
         end
         
-        % grid housing labels, sliders, and spinners
-        function init_child_grid1(app)
+        function createChildGrid1(app)
+            % grid housing labels, sliders, and spinners
             app.ChildGridLayout1 = uigridlayout(app.ParentGridLayout);
             app.ChildGridLayout1.ColumnWidth = {'1x', '1x', '1x'};
             app.ChildGridLayout1.RowHeight = {'1x', '1x', '1x', '1x'};
@@ -125,8 +130,8 @@ classdef BackgroundPhaseCorrectionApp < matlab.apps.AppBase & BackgroundPhaseCor
             app.ChildGridLayout1.Layout.Column = 2;
         end
 
-        % grid housing buttons
-        function init_child_grid2(app)
+        function createChildGrid2(app)
+            % grid housing buttons
             app.ChildGridLayout2 = uigridlayout(app.ParentGridLayout);
             app.ChildGridLayout2.ColumnWidth = {'1x'};
             app.ChildGridLayout2.RowHeight = {'1x', '1x', '1x', '1x'};
@@ -134,8 +139,7 @@ classdef BackgroundPhaseCorrectionApp < matlab.apps.AppBase & BackgroundPhaseCor
             app.ChildGridLayout2.Layout.Column = 2;
         end
         
-        function init_mag_axes(app)
-            % Create mag axes
+        function createMagAxes(app)
             app.MagAxes = uiaxes(app.ParentGridLayout);
             app.MagAxes.Layout.Row = 1;
             app.MagAxes.Layout.Column = 1;
@@ -157,8 +161,7 @@ classdef BackgroundPhaseCorrectionApp < matlab.apps.AppBase & BackgroundPhaseCor
             app.MagImage = imagesc(app.MagAxes, 'CData', whiteImage, [0 210]);
         end
         
-        function init_velocity_axes(app)
-            % Create velocity axes
+        function createVelocityAxes(app)
             app.VelocityAxes = uiaxes(app.ParentGridLayout);
             app.VelocityAxes.Layout.Row = 2;
             app.VelocityAxes.Layout.Column = 1;
@@ -180,189 +183,174 @@ classdef BackgroundPhaseCorrectionApp < matlab.apps.AppBase & BackgroundPhaseCor
             app.VelocityImage = imagesc(app.VelocityAxes, 'CData', whiteImage, [0 210]);
         end
         
-        function init_image_label(app)
+        function createImageLabel(app)
             app.ImageLabel = uilabel(app.ChildGridLayout1);
             app.ImageLabel.Layout.Row = 1;
             app.ImageLabel.Layout.Column = 1;
             app.ImageLabel.Text = 'Image';
         end
         
-        function init_vmax_label(app)
+        function createVmaxLabel(app)
             app.VmaxLabel = uilabel(app.ChildGridLayout1);
             app.VmaxLabel.Layout.Row = 2;
             app.VmaxLabel.Layout.Column = 1;
             app.VmaxLabel.Text = 'Vmax';
         end
         
-        function init_cd_label(app)
+        function createCDLabel(app)
             app.CDLabel = uilabel(app.ChildGridLayout1);
             app.CDLabel.Layout.Row = 3;
             app.CDLabel.Layout.Column = 1;
             app.CDLabel.Text = 'CD Threshold';
         end
         
-        function init_noise_label(app)
+        function createNoiseLabel(app)
             app.NoiseLabel = uilabel(app.ChildGridLayout1);
             app.NoiseLabel.Layout.Row = 4;
             app.NoiseLabel.Layout.Column = 1;
             app.NoiseLabel.Text = 'Noise Threshold';
         end
         
-        function init_fit_order_label(app)
+        function createFitOrderLabel(app)
             app.FitOrderLabel = uilabel(app.ChildGridLayout1);
             app.FitOrderLabel.Layout.Row = 5;
             app.FitOrderLabel.Layout.Column = 1;
             app.FitOrderLabel.Text = 'Fit Order';
         end
         
-        function init_image_slider(app)
+        function createImageSlider(app)
             app.ImageSlider = uislider(app.ChildGridLayout1);
             app.ImageSlider.Layout.Row = 1;
             app.ImageSlider.Layout.Column = 2;
             app.ImageSlider.MajorTicks = [0:20:100];
             app.ImageSlider.MinorTicks = [5:5:100];
-            app.ImageSlider.MajorTickLabels = string(0:20:100);
+            app.ImageSlider.MajorTickLabels = string(0:0.20:1);
             app.ImageSlider.Limits = [0 100];
             app.ImageSlider.Value = app.Image * 100;
-            app.ImageSlider.ValueChangedFcn = app.createCallbackFcn(@image_value_changed, true);
-            app.ImageSlider.ValueChangingFcn = app.createCallbackFcn(@image_value_changed, true);
+            app.ImageSlider.ValueChangedFcn = app.createCallbackFcn(@imageValueChanged, true);
+            app.ImageSlider.ValueChangingFcn = app.createCallbackFcn(@imageValueChanged, true);
         end
         
-        function init_vmax_slider(app)
+        function createVmaxSlider(app)
             app.VmaxSlider = uislider(app.ChildGridLayout1);
             app.VmaxSlider.Layout.Row = 2;
             app.VmaxSlider.Layout.Column = 2;
             app.VmaxSlider.MajorTicks = [0:20:100];
             app.VmaxSlider.MinorTicks = [5:5:100];
-            app.VmaxSlider.MajorTickLabels = string(0:20:100);
+            app.VmaxSlider.MajorTickLabels = string(0:0.20:1);
             app.VmaxSlider.Value = app.Vmax;
             app.VmaxSlider.Limits = [0 100];
-            app.VmaxSlider.ValueChangedFcn = app.createCallbackFcn(@vmax_value_changed, true);
-            app.VmaxSlider.ValueChangingFcn = app.createCallbackFcn(@vmax_value_changed, true);
+            app.VmaxSlider.ValueChangedFcn = app.createCallbackFcn(@vmaxValueChanged, true);
+            app.VmaxSlider.ValueChangingFcn = app.createCallbackFcn(@vmaxValueChanged, true);
         end
         
-        function init_cd_slider(app)
+        function createCDSlider(app)
             app.CDSlider = uislider(app.ChildGridLayout1);
             app.CDSlider.Layout.Row = 3;
             app.CDSlider.Layout.Column = 2;
             app.CDSlider.MajorTicks = [0:20:100];
             app.CDSlider.MinorTicks = [5:5:100];
-            app.CDSlider.MajorTickLabels = string(0:20:100);
+            app.CDSlider.MajorTickLabels = string(0:0.20:1);
             app.CDSlider.Value = app.CDThreshold * 100;
             app.CDSlider.Limits = [0 100];
-            app.CDSlider.ValueChangedFcn = app.createCallbackFcn(@cd_threshold_value_changed, true);
-            app.CDSlider.ValueChangingFcn = app.createCallbackFcn(@cd_threshold_value_changed, true);
+            app.CDSlider.ValueChangedFcn = app.createCallbackFcn(@cdThresholdValueChanged, true);
+            app.CDSlider.ValueChangingFcn = app.createCallbackFcn(@cdThresholdValueChanged, true);
         end
         
-        function init_noise_slider(app)
+        function createNoiseSlider(app)
             app.NoiseSlider = uislider(app.ChildGridLayout1);
             app.NoiseSlider.MajorTicks = [0:20:100];
             app.NoiseSlider.MinorTicks = [5:5:100];
-            app.NoiseSlider.MajorTickLabels = string(0:20:100);
+            app.NoiseSlider.MajorTickLabels = string(0:0.20:1);
             app.NoiseSlider.Layout.Row = 4;
             app.NoiseSlider.Layout.Column = 2;
             app.NoiseSlider.Value = app.NoiseThreshold * 100;
             app.NoiseSlider.Limits = [0 100];
-            app.NoiseSlider.ValueChangedFcn = app.createCallbackFcn(@noise_threshold_value_changed, true);
-            app.NoiseSlider.ValueChangingFcn = app.createCallbackFcn(@noise_threshold_value_changed, true);
+            app.NoiseSlider.ValueChangedFcn = app.createCallbackFcn(@noiseThresholdValueChanged, true);
+            app.NoiseSlider.ValueChangingFcn = app.createCallbackFcn(@noiseThresholdValueChanged, true);
         end
         
-        %{
-        function init_fit_order_slider(app)
-            app.FitOrderSlider = uislider(app.ChildGridLayout1);
-            app.FitOrderSlider.MajorTicks = [0:20:100];
-            app.FitOrderSlider.MinorTicks = [5:5:100];
-            app.FitOrderSlider.MajorTickLabels = string(0:20:100);
-            app.FitOrderSlider.Layout.Row = 5;
-            app.FitOrderSlider.Layout.Column = 2;
-            app.FitOrderSlider.Value = app.FitOrder;
-            app.FitOrderSlider.Limits = [0 100];
-            app.FitOrderSlider.ValueChangedFcn = app.createCallbackFcn(@fit_order_value_changed, true);
-            app.FitOrderSlider.ValueChangingFcn = app.createCallbackFcn(@fit_order_value_changed, true);
-        end
-        %}
-        
-        function init_image_spinner(app)
+        function createImageSpinner(app)
             app.ImageSpinner = uispinner(app.ChildGridLayout1);
             app.ImageSpinner.Layout.Row = 1;
             app.ImageSpinner.Layout.Column = 3;
             app.ImageSpinner.Limits = [0 1];
             app.ImageSpinner.Step = 0.01;
             app.ImageSpinner.Value = app.Image;
-            app.ImageSpinner.ValueChangedFcn = app.createCallbackFcn(@image_value_changed, true);
+            app.ImageSpinner.ValueChangedFcn = app.createCallbackFcn(@imageValueChanged, true);
         end
         
-        function init_vmax_spinner(app)
+        function createVmaxSpinner(app)
             app.VmaxSpinner = uispinner(app.ChildGridLayout1);
             app.VmaxSpinner.Layout.Row = 2;
             app.VmaxSpinner.Layout.Column = 3;
             app.VmaxSpinner.Limits = [0 1];
             app.VmaxSpinner.Step = 0.01;
             app.VmaxSpinner.Value = app.Vmax;
-            app.VmaxSpinner.ValueChangedFcn = app.createCallbackFcn(@vmax_value_changed, true);
+            app.VmaxSpinner.ValueChangedFcn = app.createCallbackFcn(@vmaxValueChanged, true);
         end
         
-        function init_cd_spinner(app)
+        function createCDSpinner(app)
             app.CDSpinner = uispinner(app.ChildGridLayout1);
             app.CDSpinner.Layout.Row = 3;
             app.CDSpinner.Layout.Column = 3;
             app.CDSpinner.Limits = [0 1];
             app.CDSpinner.Step = 0.01;
             app.CDSpinner.Value = app.CDThreshold;
-            app.CDSpinner.ValueChangedFcn = app.createCallbackFcn(@cd_threshold_value_changed, true);
+            app.CDSpinner.ValueChangedFcn = app.createCallbackFcn(@cdThresholdValueChanged, true);
         end
         
-        function init_noise_spinner(app)
+        function createNoiseSpinner(app)
             app.NoiseSpinner = uispinner(app.ChildGridLayout1);
             app.NoiseSpinner.Layout.Row = 4;
             app.NoiseSpinner.Layout.Column = 3;
             app.NoiseSpinner.Limits = [0 1];
             app.NoiseSpinner.Step = 0.01;
             app.NoiseSpinner.Value = app.NoiseThreshold;
-            app.NoiseSpinner.ValueChangedFcn = app.createCallbackFcn(@noise_threshold_value_changed, true);
+            app.NoiseSpinner.ValueChangedFcn = app.createCallbackFcn(@noiseThresholdValueChanged, true);
         end
         
-        function init_fit_order_spinner(app)
+        function createFitOrderSpinner(app)
             app.FitOrderSpinner = uispinner(app.ChildGridLayout1);
             app.FitOrderSpinner.Layout.Row = 5;
             app.FitOrderSpinner.Layout.Column = 3;
             app.FitOrderSpinner.Limits = [0 inf];
             app.FitOrderSpinner.Step = 1;
             app.FitOrderSpinner.Value = app.FitOrder;
-            app.FitOrderSpinner.ValueChangedFcn = app.createCallbackFcn(@fit_order_value_changed, true);
+            app.FitOrderSpinner.ValueChangedFcn = app.createCallbackFcn(@fitOrderValueChanged, true);
         end
         
-        function init_apply_correction_cb(app)
+        function createApplyCorrectionCheckbox(app)
             app.ApplyCorrectionCheckbox = uicheckbox(app.ChildGridLayout2);
             app.ApplyCorrectionCheckbox.Layout.Row = 1;
             app.ApplyCorrectionCheckbox.Layout.Column = 1;
             app.ApplyCorrectionCheckbox.Text = 'Apply Correction';
             app.ApplyCorrectionCheckbox.Value = app.ApplyCorrection;
-            app.ApplyCorrectionCheckbox.ValueChangedFcn = app.createCallbackFcn(@apply_correction_value_changed, true);
+            app.ApplyCorrectionCheckbox.ValueChangedFcn = app.createCallbackFcn(@applyCorrectionValueChanged, true);
         end
         
-        function init_update_button(app)
+        function createUpdateButton(app)
             app.UpdateButton = uibutton(app.ChildGridLayout2, 'push');
             app.UpdateButton.Layout.Row = 2;
             app.UpdateButton.Layout.Column = 1;
             app.UpdateButton.Text = 'Update Images';
-            app.UpdateButton.ButtonPushedFcn = app.createCallbackFcn(@update_button_pushed, true);
+            app.UpdateButton.ButtonPushedFcn = app.createCallbackFcn(@updateButtonPushed, true);
         end
         
-        function init_reset_fit_button(app)
+        function createResetFitButton(app)
             app.ResetFitButton = uibutton(app.ChildGridLayout2, 'push');
             app.ResetFitButton.Layout.Row = 3;
             app.ResetFitButton.Layout.Column = 1;
             app.ResetFitButton.Text = 'Reset Fit';
-            app.ResetFitButton.ButtonPushedFcn = app.createCallbackFcn(@reset_fit_button_pushed, true);
+            app.ResetFitButton.ButtonPushedFcn = app.createCallbackFcn(@resetFitButtonPushed, true);
         end
         
-        function init_done_button(app)
+        function createDoneButton(app)
             app.DoneButton = uibutton(app.ChildGridLayout2, 'push');
             app.DoneButton.Layout.Row = 4;
             app.DoneButton.Layout.Column = 1;
             app.DoneButton.Text = 'Done';
-            app.DoneButton.ButtonPushedFcn = app.createCallbackFcn(@done_button_pushed, true);
+            app.DoneButton.ButtonPushedFcn = app.createCallbackFcn(@doneButtonPushed, true);
         end
 
     end
@@ -371,17 +359,18 @@ classdef BackgroundPhaseCorrectionApp < matlab.apps.AppBase & BackgroundPhaseCor
     methods (Access = private)
 
         % Code that executes after component creation
-        function startupFcn(app, varargin)
-            app.CenterlineToolApp = varargin{1};
+        function startupFcn(app, centerlineToolApp)
+            app.CenterlineToolApp = centerlineToolApp;
             app.VX = app.CenterlineToolApp.VIPR.VelocityMean(:,:,:,1);
             app.VY = app.CenterlineToolApp.VIPR.VelocityMean(:,:,:,2);
             app.VZ = app.CenterlineToolApp.VIPR.VelocityMean(:,:,:,3);
-            app.load_();
-            app.update_images();
+            app.PhaseCorrection = BackgroundPhaseCorrection();
+            app.loadApp();
+            app.updateImages();
         end
 
         % Value changed function: ImageSlider and ImageSpinner
-        function image_value_changed(app, event)
+        function imageValueChanged(app, event)
             src = event.Source.Type;
             value = event.Value;
             
@@ -397,12 +386,12 @@ classdef BackgroundPhaseCorrectionApp < matlab.apps.AppBase & BackgroundPhaseCor
                     value = value / 100;
             end
 
-            app.Image = value;
-            app.update_images();
+            app.PhaseCorrection.Image = value;
+            app.updateImages();
         end
 
         % Value changed function: VmaxSlider and VmaxSpinner
-        function vmax_value_changed(app, event)
+        function vmaxValueChanged(app, event)
             src = event.Source.Type;
             value = event.Value;
             
@@ -418,12 +407,12 @@ classdef BackgroundPhaseCorrectionApp < matlab.apps.AppBase & BackgroundPhaseCor
                     value = value / 100;
             end
 
-            app.Vmax = value;
-            app.update_images();
+            app.PhaseCorrection.Vmax = value;
+            app.updateImages();
         end
 
         % Value changed function: CDSlider and CDSpinner
-        function cd_threshold_value_changed(app, event)
+        function cdThresholdValueChanged(app, event)
             src = event.Source.Type;
             value = event.Value;
             
@@ -439,12 +428,12 @@ classdef BackgroundPhaseCorrectionApp < matlab.apps.AppBase & BackgroundPhaseCor
                     value = value / 100;
             end
             
-            app.CDThreshold = value;
-            app.update_images();
+            app.PhaseCorrection.CDThreshold = value;
+            app.updateImages();
         end
 
         % Value changed function: NoiseSlider and NoiseSpinner
-        function noise_threshold_value_changed(app, event)
+        function noiseThresholdValueChanged(app, event)
             src = event.Source.Type;
             value = event.Value;
             
@@ -459,142 +448,153 @@ classdef BackgroundPhaseCorrectionApp < matlab.apps.AppBase & BackgroundPhaseCor
                     app.NoiseSlider.Value = value;
                     value = value / 100;
             end
-            app.NoiseThreshold = value;
-            app.update_images();
+            app.PhaseCorrection.NoiseThreshold = value;
+            app.updateImages();
         end
 
         % Value changed function: FitOrderSlider and FitOrderSpinner
-        function fit_order_value_changed(app, event)
+        function fitOrderValueChanged(app, event)
             value = floor(event.Value);
-            app.FitOrder = value;
-            app.update_images();
+            app.PhaseCorrection.FitOrder = value;
+            app.updateImages();
         end
         
-        function apply_correction_value_changed(app, event)
+        % Value Changed function: ApplyCorrectionCheckBox
+        function applyCorrectionValueChanged(app, event)
             value = event.Value;
-            app.ApplyCorrection = value;
+            app.PhaseCorrection.ApplyCorrection = value;
         end
         
         % Button pushed function: ResetFitButton
-        function reset_fit_button_pushed(app, event)
-            app.reset_fit();
-            app.update_images();
+        function resetFitButtonPushed(app, ~)
+            app.PhaseCorrection.resetFit();
+            app.updateImages();
         end
 
         % Button pushed function: UpdateButton
-        function update_button_pushed(app, event)
-            mask = app.create_angiogram(app.CenterlineToolApp.VIPR.MAG);
-            app.poly_fit_3d(mask);
-            app.update_images();
+        function updateButtonPushed(app, ~)
+            mask = app.PhaseCorrection.createAngiogram(app.CenterlineToolApp.VIPR.MAG, app.CenterlineToolApp.VIPR.VelocityEncoding);
+            app.PhaseCorrection.polyFit3d(mask);
+            app.updateImages();
         end
 
         % Button pushed function: DoneButton
-        function done_button_pushed(app, event)
-            app.UIFigure.WindowState = "minimized";
-            waitfor(app.UIFigure, 'WindowState', 'minimized');
-            app.CenterlineToolApp.VIPR = app.poly_correction(app.CenterlineToolApp.VIPR);
-            app.CenterlineToolApp.VIPR.TimeMIP = CalculateAngiogram.calculate_angiogram(app.CenterlineToolApp.VIPR);
-            [~, app.CenterlineToolApp.VIPR.Segment] = CalculateSegment(app.CenterlineToolApp.VIPR);
-            app.save_();
-            app.UIFigureCloseRequest();
+        function doneButtonPushed(app, ~)
+            % init waitbar dialog
+            dlg = uiprogressdlg(app.UIFigure);
+            dlg.Title = 'Background Phase Correction';
+            dlg.Indeterminate = 'on';
+            
+            dlg.Message = 'Correcting for polynomial';
+            velocityMean = app.PhaseCorrection.polyCorrection( ...
+                app.CenterlineToolApp.VIPR.MAG, ...
+                app.CenterlineToolApp.VIPR.Velocity,...
+                app.CenterlineToolApp.VIPR.VelocityMean, ...
+                app.CenterlineToolApp.VIPR.NoFrames, ...
+                dlg);
+            
+            dlg.Message = 'Calculating angiogram';
+            timeMIP = app.PhaseCorrection.calculateAngiogram(...
+                app.CenterlineToolApp.VIPR.MAG, ...
+                app.CenterlineToolApp.VIPR.VelocityMean, ...
+                app.CenterlineToolApp.VIPR.VelocityEncoding, ...
+                dlg);
+            
+            dlg.Message = 'Calculating segment';
+            segment = app.PhaseCorrection.calculateSegment(...
+                app.CenterlineToolApp.VIPR.Resolution, ...
+                app.CenterlineToolApp.VIPR.TimeMIP, ...
+                dlg);
+            
+            app.CenterlineToolApp.setPhaseCorrectionParameters(velocityMean, timeMIP, segment);
+            
+            dlg.Message = 'Saving parameters';
+            app.saveApp();
+            app.uiFigureCloseRequest();
         end
         
         % Window key pressed function
-        function UIWindowKeyPressFcn(app, event)
+        function uiWindowKeyPressFcn(app, event)
             switch char(event.Modifier)
                 case 'control'
                     if strcmpi(event.Key, 'w')
-                        app.UIFigureCloseRequest();
+                        uiFigureCloseRequest(app);
                     end
             end
         end
 
         % Close request function: UIFigure
-        function UIFigureCloseRequest(app, event)
+        function uiFigureCloseRequest(app, ~)
             delete(app);
         end
         
     end
 
-    % general callbacks
+    % general methods
     methods (Access = private)
              
-        function update_images(app)
-            [magSlice, velocitySlice] = app.get_slices(app.CenterlineToolApp.VIPR);
+        function updateImages(app)
+            [magSlice, velocitySlice] = app.PhaseCorrection.getSlices(...
+                                            app.CenterlineToolApp.VIPR.MAG, ...
+                                            app.CenterlineToolApp.VIPR.VelocityEncoding);
             app.MagImage.CData = magSlice;
             app.VelocityImage.CData = velocitySlice;
         end
         
     end
 
-    % custom save method
+    % custom IO methods for Apps
     methods (Access = private)
-       
-        function save_(app)
-            %{
+       %{
             app designer objects cannot utilize 'saveobj' and 'loadoabj'
             properly
             this is a workaround to that to save only necessary data that,
             when combined with the required input arg to the app, will
             restore the previous state
-            %}
+        %}
+        
+        function saveApp(app)
             disp("Saving background phase correction parameters...");
             directory = fullfile(app.CenterlineToolApp.VIPR.DataDirectory, 'saved_analysis');
             if ~exist(directory, 'dir')
                 mkdir(directory);
             end
             fname = 'phase_correction.mat';
-            s.Image = app.Image;
-            s.Vmax = app.Vmax;
-            s.CDThreshold = app.CDThreshold;
-            s.NoiseThreshold = app.NoiseThreshold;
-            s.FitOrder = app.FitOrder;
-            s.ApplyCorrection = app.ApplyCorrection;
-            s.PolyFitX = app.PolyFitX;
-            s.PolyFitY = app.PolyFitY;
-            s.PolyFitZ = app.PolyFitZ;
+            s.Image = app.PhaseCorrection.Image;
+            s.Vmax = app.PhaseCorrection.Vmax;
+            s.CDThreshold = app.PhaseCorrection.CDThreshold;
+            s.NoiseThreshold = app.PhaseCorrection.NoiseThreshold;
+            s.FitOrder = app.PhaseCorrection.FitOrder;
+            s.ApplyCorrection = app.PhaseCorrection.ApplyCorrection;
+            s.PolyFit = app.PhaseCorrection.PolyFit;
             save(fullfile(directory, fname), 's', '-v7.3', '-nocompression');
         end
         
-    end
-    
-    % custom load method
-    methods (Access = private)
-        
-        function load_(app)
-            %{
-            app designer objects cannot utilize 'saveobj' and 'loadoabj'
-            properly
-            this is a workaround to that to load previously saved data that,
-            when combined with the required input arg to the app, will
-            restore the previous state
-            %}
+        function loadApp(app)
             directory = fullfile(app.CenterlineToolApp.VIPR.DataDirectory, 'saved_analysis');
             fname = 'phase_correction.mat';
             
             if exist(fullfile(directory, fname), 'file')
                 load(fullfile(directory, fname), 's');
-                app.Image = s.Image;
-                app.Vmax = s.Vmax;
-                app.CDThreshold = s.CDThreshold;
-                app.NoiseThreshold = s.NoiseThreshold;
-                app.FitOrder = s.FitOrder;
-                app.ApplyCorrection = s.ApplyCorrection;
-                app.PolyFitX = s.PolyFitX;
-                app.PolyFitY = s.PolyFitY;
-                app.PolyFitZ = s.PolyFitZ;
+                app.PhaseCorrection.Image = s.Image;
+                app.PhaseCorrection.Vmax = s.Vmax;
+                app.PhaseCorrection.CDThreshold = s.CDThreshold;
+                app.PhaseCorrection.NoiseThreshold = s.NoiseThreshold;
+                app.PhaseCorrection.FitOrder = s.FitOrder;
+                app.PhaseCorrection.ApplyCorrection = s.ApplyCorrection;
+                app.PhaseCorrection.PolyFit = s.PolyFit;
                 
-                app.ImageSlider.Value = app.Image * 100;
-                app.ImageSpinner.Value = app.Image;
-                app.VmaxSlider.Value = app.Vmax * 100;
-                app.VmaxSpinner.Value = app.Vmax;
-                app.CDSlider.Value = app.CDThreshold * 100;
-                app.CDSpinner.Value = app.CDThreshold;
-                app.NoiseSlider.Value = app.NoiseThreshold * 100;
-                app.NoiseSpinner.Value = app.NoiseThreshold;
+                app.ImageSlider.Value = app.PhaseCorrection.Image * 100;
+                app.ImageSpinner.Value = app.PhaseCorrection.Image;
+                app.VmaxSlider.Value = app.PhaseCorrection.Vmax * 100;
+                app.VmaxSpinner.Value = app.PhaseCorrection.Vmax;
+                app.CDSlider.Value = app.PhaseCorrection.CDThreshold * 100;
+                app.CDSpinner.Value = app.PhaseCorrection.CDThreshold;
+                app.NoiseSlider.Value = app.PhaseCorrection.NoiseThreshold * 100;
+                app.NoiseSpinner.Value = app.PhaseCorrection.NoiseThreshold;
             end
         end
         
     end
-    
+
 end
