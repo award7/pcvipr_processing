@@ -36,7 +36,7 @@ classdef CalculateSegment < handle
             segment = zeros(size(timeMIP_crop));
             segment(normed_MIP>muhat+4.5*sigmahat) = 1;
 
-            %The value at the end of the commnad in the minimum area of each segment to keep 
+            % The value at the end of the commnad in the minimum area of each segment to keep 
             segment = bwareaopen(segment, round(sum(segment(:)) .* 0.005), 6); 
             
             % Fill in holes created by slow flow on the inside of vessels

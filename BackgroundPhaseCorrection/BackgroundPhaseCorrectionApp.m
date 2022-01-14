@@ -1,4 +1,4 @@
-classdef BackgroundPhaseCorrectionApp < matlab.apps.AppBase% & BackgroundPhaseCorrection
+classdef BackgroundPhaseCorrectionApp < matlab.apps.AppBase & BackgroundPhaseCorrection
 
     % Properties that correspond to app components
     properties (Access = private)
@@ -30,7 +30,7 @@ classdef BackgroundPhaseCorrectionApp < matlab.apps.AppBase% & BackgroundPhaseCo
     end
     
     properties (Access = private)
-        VIPR;
+        CenterlineToolApp;
         MagImage;
         VelocityImage;
         Map = [gray(200); jet(10)];
@@ -41,7 +41,7 @@ classdef BackgroundPhaseCorrectionApp < matlab.apps.AppBase% & BackgroundPhaseCo
 
         % Construct app
         function app = BackgroundPhaseCorrectionApp(varargin)
-
+            
             % Create UIFigure and components
             app.createComponents();
 
@@ -372,10 +372,10 @@ classdef BackgroundPhaseCorrectionApp < matlab.apps.AppBase% & BackgroundPhaseCo
 
         % Code that executes after component creation
         function startupFcn(app, varargin)
-            app.VIPR = varargin{1};
-            app.VX = app.VIPR.VelocityMean(:,:,:,1);
-            app.VY = app.VIPR.VelocityMean(:,:,:,2);
-            app.VZ = app.VIPR.VelocityMean(:,:,:,3);
+            app.CenterlineToolApp = varargin{1};
+            app.VX = app.CenterlineToolApp.VIPR.VelocityMean(:,:,:,1);
+            app.VY = app.CenterlineToolApp.VIPR.VelocityMean(:,:,:,2);
+            app.VZ = app.CenterlineToolApp.VIPR.VelocityMean(:,:,:,3);
             app.load_();
             app.update_images();
         end
@@ -483,7 +483,7 @@ classdef BackgroundPhaseCorrectionApp < matlab.apps.AppBase% & BackgroundPhaseCo
 
         % Button pushed function: UpdateButton
         function update_button_pushed(app, ~)
-            mask = app.create_angiogram(app.VIPR.MAG);
+            mask = app.create_angiogram(app.CenterlineToolApp.VIPR.MAG);
             app.poly_fit_3d(mask);
             app.update_images();
         end
@@ -492,9 +492,9 @@ classdef BackgroundPhaseCorrectionApp < matlab.apps.AppBase% & BackgroundPhaseCo
         function done_button_pushed(app, ~)
             app.UIFigure.WindowState = "minimized";
             waitfor(app.UIFigure, 'WindowState', 'minimized');
-            app.VIPR = app.poly_correction(app.VIPR);
-            app.VIPR.TimeMIP = CalculateAngiogram.calculate_angiogram(app.VIPR);
-            [~, app.VIPR.Segment] = CalculateSegment(app.VIPR);
+            app.CenterlineToolApp.VIPR = app.poly_correction(app.CenterlineToolApp.VIPR);
+            app.CenterlineToolApp.VIPR.TimeMIP = CalculateAngiogram.calculate_angiogram(app.CenterlineToolApp.VIPR);
+            [~, app.CenterlineToolApp.VIPR.Segment] = CalculateSegment(app.CenterlineToolApp.VIPR);
             app.save_();
             app.UIFigureCloseRequest();
         end
@@ -520,7 +520,7 @@ classdef BackgroundPhaseCorrectionApp < matlab.apps.AppBase% & BackgroundPhaseCo
     methods (Access = private)
              
         function update_images(app)
-            [magSlice, velocitySlice] = app.get_slices(app.VIPR);
+            [magSlice, velocitySlice] = app.get_slices(app.CenterlineToolApp.VIPR);
             app.MagImage.CData = magSlice;
             app.VelocityImage.CData = velocitySlice;
         end
@@ -539,7 +539,7 @@ classdef BackgroundPhaseCorrectionApp < matlab.apps.AppBase% & BackgroundPhaseCo
             restore the previous state
             %}
             disp("Saving background phase correction parameters...");
-            directory = fullfile(app.VIPR.DataDirectory, 'saved_analysis');
+            directory = fullfile(app.CenterlineToolApp.VIPR.DataDirectory, 'saved_analysis');
             if ~exist(directory, 'dir')
                 mkdir(directory);
             end
@@ -569,7 +569,7 @@ classdef BackgroundPhaseCorrectionApp < matlab.apps.AppBase% & BackgroundPhaseCo
             when combined with the required input arg to the app, will
             restore the previous state
             %}
-            directory = fullfile(app.VIPR.DataDirectory, 'analysis');
+            directory = fullfile(app.CenterlineToolApp.VIPR.DataDirectory, 'analysis');
             fname = 'phase_correction.mat';
             
             if exist(fullfile(directory, fname), 'file')

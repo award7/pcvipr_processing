@@ -1,5 +1,16 @@
 classdef CenterlineToolApp < matlab.apps.AppBase
-
+    % TODO: make linker class for CenterlineToolApp <--> BgPCApp
+        % motivation: BgPCApp is called from CenterlineToolApp and a
+        % waitfor is applied, waiting for user interaction to complete so 
+        % images can update in CenterlineToolApp
+        % linking will reduce the overhead of waitfor and allow the BgPCApp
+        % to indirectly update CenterlineToolApp when complete
+    % TODO: make linker class for CenterlineToolApp <-->
+    % VesselSelectionApp?? VesselSegment/Parameter Plot Apps??
+        % motivation: To have CenterlineToolApp as the parent app??
+        % not sure what benefit this will have as these apps don't need any
+        % interaction with CenterlineToolApp...
+    
     % Properties that correspond to app components
     properties (Access = private, Hidden)
         UIFigure                            matlab.ui.Figure
@@ -339,8 +350,8 @@ classdef CenterlineToolApp < matlab.apps.AppBase
             end
             app.DataFileOutputLabel.Text = app.VIPR.DataFileOutputDirectory;
             app.backgroundPhaseCorrectionButtonPushed();
-            app.featureExtractionButtonPushed();
-            app.vesselSelectionButtonPushed(app.VIPR);
+            % app.featureExtractionButtonPushed();
+            % app.vesselSelectionButtonPushed();
         end
 
         % Button pushed function: DBConnectionButton
@@ -440,7 +451,7 @@ classdef CenterlineToolApp < matlab.apps.AppBase
             
             if isfield(app.VIPR, 'BranchMat') && isfield(app.VIPR, 'BranchList')
                 try
-                    app.VesselSelectionApp = VesselSelectionApp(app.VIPR); %#ok<ADPROPLC>
+                    app.VesselSelectionApp = VesselSelectionApp(app); %#ok<ADPROPLC>
                 catch ME
                     delete(app.VesselSelectionApp);
                     rethrow(ME);
