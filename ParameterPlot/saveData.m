@@ -53,35 +53,35 @@ classdef saveData < handle
         
         function make_data_dir(self)
             self.data_dir = fullfile(self.root_dir, 'data');
-            if ~exist(self.data_dir) == 1
+            if ~exist(self.data_dir, 'dir') == 7
                 mkdir(self.data_dir);
             end
         end
         
         function make_raw_dir(self)
             self.data_dir = fullfile(self.root_dir, 'data', 'raw');
-            if ~exist(self.data_dir) == 1
+            if ~exist(self.data_dir, 'dir') == 7
                 mkdir(self.data_dir);
             end
         end
         
         function make_proc_dir(self)
             self.data_dir = fullfile(self.root_dir, 'data', 'proc');
-            if ~exist(self.data_dir) == 1
+            if ~exist(self.data_dir, 'dir') == 7
                 mkdir(self.data_dir);
             end
         end
         
         function make_images_dir(self)
             self.img_dir = fullfile(self.root_dir, 'data', 'img');
-            if ~exist(self.img_dir) == 1
+            if ~exist(self.img_dir, 'dir') == 7
                 mkdir(self.img_dir);
             end
         end
         
         function make_plots_dir(self)
             self.plots_dir = fullfile(self.root_dir, 'data', 'plots');
-            if ~exist(self.plots_dir) == 1
+            if ~exist(self.plots_dir, 'dir') == 7
                 mkdir(self.plots_dir);
             end
         end
@@ -125,7 +125,7 @@ classdef saveData < handle
         end
         
         function make_hr_table(self, hr_data)
-            
+            % TODO
         end
         
     end
@@ -149,8 +149,8 @@ classdef saveData < handle
 
             % make table
             header = horzcat({'Voxel', 'Flow_(mL/s)'}, num2cell(relative), {'Flow_(mL/min)'}); 
-            time_resolved_table = table(horzcat(voxels, flowPulsatile, flow), 'VariableNames', header);
-            time_resolved_table = varfun(@real, time_resolved_table);
+            self.time_resolved_table = table(horzcat(voxels, flowPulsatile, flow), 'VariableNames', header);
+            self.time_resolved_table = varfun(@real, self.time_resolved_table);
             
             % save flow data
             writetable(data_table, data_path);
@@ -162,7 +162,8 @@ classdef saveData < handle
             
         end
   
-        function hr_2csv(self)
+        function hr2csv(self)
+           % TODO
            % write hr data to csv
         end
         
@@ -178,7 +179,6 @@ classdef saveData < handle
     methods (Access = public)
         % make db connection
         % write to tables
-        % overwrite if exist (dialog box?)
         % close connection
     end
     
@@ -224,7 +224,7 @@ classdef saveData < handle
         end
         
         function save_plots(app)
-            plots_dir = app.make_plots_dir();
+            self.plots_dir = app.make_plots_dir();
             
             vessel = app.VesselNameDropDown.Value;
             file_ext = '.png';
@@ -251,7 +251,7 @@ classdef saveData < handle
                 fig.axes.Position(3:4) = all_axes(k).Position(3:4);
                 plot_name = all_axes(k).Title;
                 plot_name = strrep(lower(plot_name), ' ', '_');
-                saveas(fig.axes, fullfile(plots_dir, [vessel, '_', plot_name, file_ext]));
+                saveas(fig.axes, fullfile(self.plots_dir, [vessel, '_', plot_name, file_ext]));
                 delete(fig.figure);
                 fprintf(disp_format, plot_name);
             end
