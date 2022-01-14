@@ -41,8 +41,7 @@ classdef CenterlineToolApp < matlab.apps.AppBase
         % child GUIs
         PhaseCorrectionApp;
         VesselSelectionApp;
-        Vessel3DApp;
-        % ParameterPlotApp;
+        Linker;
     end
     
     % main data structure that will contain all necessary data for
