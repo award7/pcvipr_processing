@@ -28,8 +28,8 @@ classdef LoadVIPR < handle
         end
         
         % main fcn
-        function s = loadVIPR(self, dlg)
-           self.getDataDirectory();
+        function s = loadVIPR(self, dlg, data_directory)
+           self.getDataDirectory(data_directory);
            clc;
            fprintf('Loading data from: %s\n', self.DataDirectory);
            dlg.Message = strcat('Loading data from: ', self.DataDirectory);
@@ -47,13 +47,13 @@ classdef LoadVIPR < handle
     % load data methods
     methods (Access = private)
         
-        function getDataDirectory(self)
+        function getDataDirectory(self, data_directory)
             % Get and load input DataDirectory
             % Check if the cancel button was triggered in the uigetdir fcn
             % if cancelled, the VIPR.DataDirectory would not be altered and
             % the previous directory will be the same
             
-            self.DataDirectory = uigetdir;
+            self.DataDirectory = uigetdir(data_directory);
             if self.DataDirectory == 0
                 ME = MException('LoadVIPR:getDataDirectory:cancel', 'No folder selected');
                 throw(ME);
@@ -123,7 +123,7 @@ classdef LoadVIPR < handle
                     self.Velocity(:,:,:,n,m) = reshape(data, self.Resolution, self.Resolution, self.Resolution);
                     self.dlgCounter = self.dlgCounter + 1;
                 end
-                disp(['    Completed reading frame ', num2str(m), ' of ', num2str(self.NoFrames)]);
+                % disp(['    Completed reading frame ', num2str(m), ' of ', num2str(self.NoFrames)]);
             end
             self.Velocity = single(self.Velocity);
         end
@@ -132,10 +132,10 @@ classdef LoadVIPR < handle
             if dlg.CancelRequested
                 return;
             end
-            dlg.Message = 'Reading composite data';
-            disp('Reading composite data...');
+            % disp('Reading composite data...');
             fname = fullfile(self.DataDirectory, 'MAG.dat');
-            fprintf('    Loading %s\n', fname);
+            dlg.Message = strcat('Reading composite data: ', fname);
+            % fprintf('    Loading %s\n', fname);
             self.MAG = self.loadDat(fname);
             self.dlgCounter = self.dlgCounter + 1;
             dlg.Value = self.dlgCounter/self.dlgTotal;
@@ -149,7 +149,8 @@ classdef LoadVIPR < handle
                 end
                 dlg.Value = self.dlgCounter/self.dlgTotal;
                 fname = fullfile(self.DataDirectory, ['comp_vd_' num2str(k) '.dat']);
-                fprintf('    Loading %s\n', fname);
+                dlg.Message = strcat('Reading composite data: ', fname);
+                % fprintf('    Loading %s\n', fname);
                 self.VelocityMean(:,:,:,k) = self.loadDat(fname);
                 self.dlgCounter = self.dlgCounter + 1;
             end
