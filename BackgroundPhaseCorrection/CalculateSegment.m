@@ -1,5 +1,6 @@
 classdef CalculateSegment < handle
     % calculate Segment following background phase correction
+    % TODO: integrate with BgPCApp; no need for this to be it's own class
     
     properties (Access = private, Transient)
         MXStart;

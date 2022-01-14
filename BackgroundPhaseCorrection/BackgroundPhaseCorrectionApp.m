@@ -1,4 +1,10 @@
 classdef BackgroundPhaseCorrectionApp < matlab.apps.AppBase & BackgroundPhaseCorrection
+    % TODO: why did I have this inherit from the BgPC class?? Is that the
+    % best approach? I don't think it is but ponder it...
+    % TODO: make naming conventions consistent
+        % PascalCase for properties
+        % camelCase for methods
+        % snake_case for local variables
 
     % Properties that correspond to app components
     properties (Access = private)

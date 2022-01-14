@@ -1,5 +1,10 @@
 classdef BackgroundPhaseCorrection < handle
     % methods for applying background phase correction to PC VIPR data
+    % TODO: make naming conventions consistent
+        % PascalCase for properties
+        % camelCase for methods
+        % snake_case for local variables
+    % TODO: add validations to properties   
     
     properties (Access = protected)
         Image;
