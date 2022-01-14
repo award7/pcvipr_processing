@@ -33,8 +33,8 @@ classdef AppLinker < handle
         end
         
         function closeRequest(self)
-            delete(self.Vessel3DAppHandle);
-            delete(self.ParameterPlotAppHandle);
+            self.Vessel3DAppHandle.delete;
+            self.ParameterPlotAppHandle.delete;
         end
         
     end

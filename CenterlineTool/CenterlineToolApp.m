@@ -12,7 +12,7 @@ classdef CenterlineToolApp < matlab.apps.AppBase
         DrawROIButton                       matlab.ui.control.Button
         ViewParametricMapButton             matlab.ui.control.Button
         FeatureExtractionButton             matlab.ui.control.Button
-        VesselSelectionButton                 matlab.ui.control.Button
+        VesselSelectionButton               matlab.ui.control.Button
         BackgroundPhaseCorrectionButton     matlab.ui.control.Button
         LoadDataButton                      matlab.ui.control.Button
         DataDirectoryLabel                  matlab.ui.control.Label
@@ -21,6 +21,8 @@ classdef CenterlineToolApp < matlab.apps.AppBase
         SegmentVesselsButton                matlab.ui.control.Button
         LoadSavedDataButton                 matlab.ui.control.Button
         Vasculature3DAxesTB
+        DataFileOutputButton                matlab.ui.control.Button;
+        DataFileOutputLabel                 matlab.ui.control.Label;
     end
     
     % private properties (i.e. those that are contained in this GUI)
@@ -90,6 +92,8 @@ classdef CenterlineToolApp < matlab.apps.AppBase
             app.createSegmentVesselButton();
             app.createDataDirectoryLabel();
             app.createDatabaseLabel();
+            app.createDataFileOutputButton();
+            app.createDataFileOutputLabel();
             
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';
@@ -136,8 +140,8 @@ classdef CenterlineToolApp < matlab.apps.AppBase
             app.ChildGridLayout3 = uigridlayout(app.ChildGridLayout1);
             app.ChildGridLayout3.Layout.Row = 1;
             app.ChildGridLayout3.Layout.Column = 1;
-            app.ChildGridLayout3.ColumnWidth = {'1x', '3x', '1x'};
-            app.ChildGridLayout3.RowHeight = {'1x'};
+            app.ChildGridLayout3.ColumnWidth = {'1x', '1x', '1x', '1x', '1x', '1x'};
+            app.ChildGridLayout3.RowHeight = {'2x'};
         end
         
         function createChildGrid4(app)
@@ -145,7 +149,7 @@ classdef CenterlineToolApp < matlab.apps.AppBase
             app.ChildGridLayout4 = uigridlayout(app.ChildGridLayout1);
             app.ChildGridLayout4.Layout.Row = 2;
             app.ChildGridLayout4.Layout.Column = 1;
-            app.ChildGridLayout4.ColumnWidth = {'1x', '1x'};
+            app.ChildGridLayout4.ColumnWidth = {'1x', '1x', '1x', '1x', '1x', '1x'};
             app.ChildGridLayout4.RowHeight = {'1x'};
         end
 
@@ -240,16 +244,6 @@ classdef CenterlineToolApp < matlab.apps.AppBase
             app.LoadDataButton.ButtonPushedFcn = createCallbackFcn(app, @loadDataButtonPushed, true);
         end
 
-        function createDatabaseConnectionButton(app)
-            app.DBConnectionButton = uibutton(app.ChildGridLayout3, 'push');
-            app.DBConnectionButton.Layout.Row = 1;
-            app.DBConnectionButton.Layout.Column = 3;
-            app.DBConnectionButton.Text = 'DB Connection';
-            app.DBConnectionButton.FontSize = 12;
-            app.DBConnectionButton.FontWeight = 'bold';
-            app.DBConnectionButton.ButtonPushedFcn = createCallbackFcn(app, @databaseConnectionButtonPushed, true);
-        end
-
         function createDataDirectoryLabel(app)
             app.DataDirectoryLabel = uilabel(app.ChildGridLayout4);
             app.DataDirectoryLabel.Layout.Row = 1;
@@ -257,14 +251,43 @@ classdef CenterlineToolApp < matlab.apps.AppBase
             app.DataDirectoryLabel.Text = 'Data Directory';
             app.DataDirectoryLabel.HorizontalAlignment = 'left';
         end
-
+        
+        function createDatabaseConnectionButton(app)
+            app.DBConnectionButton = uibutton(app.ChildGridLayout3, 'push');
+            app.DBConnectionButton.Layout.Row = 1;
+            app.DBConnectionButton.Layout.Column = 6;
+            app.DBConnectionButton.Text = 'DB Connection';
+            app.DBConnectionButton.FontSize = 12;
+            app.DBConnectionButton.FontWeight = 'bold';
+            app.DBConnectionButton.ButtonPushedFcn = createCallbackFcn(app, @databaseConnectionButtonPushed, true);
+        end
+        
         function createDatabaseLabel(app)
             app.DatabaseLabel = uilabel(app.ChildGridLayout4);
             app.DatabaseLabel.Layout.Row = 1;
-            app.DatabaseLabel.Layout.Column = 2;
+            app.DatabaseLabel.Layout.Column = 6;
             app.DatabaseLabel.Text = 'Database';
             app.DatabaseLabel.HorizontalAlignment = 'right';
-        end            
+        end
+        
+        function createDataFileOutputButton(app)
+            app.DataFileOutputButton = uibutton(app.ChildGridLayout3, 'push');
+            app.DataFileOutputButton.Layout.Row = 1;
+            app.DataFileOutputButton.Layout.Column = 5;
+            app.DataFileOutputButton.Text = 'File Output Path';
+            app.DataFileOutputButton.FontSize = 12;
+            app.DataFileOutputButton.FontWeight = 'bold';
+            app.DataFileOutputButton.ButtonPushedFcn = createCallbackFcn(app, @dataFileOutputButtonPushed, true);
+        end
+
+        function createDataFileOutputLabel(app)
+            app.DataFileOutputLabel = uilabel(app.ChildGridLayout4);
+            app.DataFileOutputLabel.Layout.Row = 1;
+            app.DataFileOutputLabel.Layout.Column = 5;
+            app.DataFileOutputLabel.Text = '[path]';
+            app.DataFileOutputLabel.HorizontalAlignment = 'right';
+        end
+        
 
     end
 
@@ -278,36 +301,84 @@ classdef CenterlineToolApp < matlab.apps.AppBase
         % Code that executes after component creation
         function startupFcn(app)
             clc;
+            app.VIPR.DataDirectory = "";
+            app.VIPR.DataFileOutputDirectory = "";
             disp('Ready!');
         end
 
         % Button pushed function: LoadDataButton
         function loadDataButtonPushed(app, ~)
+            % FLOW: load data --> perform bg PC --> perform feature
+            % extraction --> open vessel selection
+            dlg = uiprogressdlg(app.UIFigure);
+            dlg.Title = 'Loading VIPR Data';
+            dlg.Message = 'Loading...';
+            dlg.Value = 0;
+            dlg.ShowPercentage = 'on';
+            dlg.Cancelable = 'on';
             try
-                dlg = uiprogressdlg(app.UIFigure);
-                dlg.Title = 'Loading VIPR Data';
-                dlg.Message = 'Loading...';
-                dlg.Value = 0;
-                dlg.ShowPercentage = 'on';
-                dlg.Cancelable = 'on';
-                app.VIPR = LoadVIPR().loadVIPR(dlg);
+                % workaround as the VIPR struct get overwritten here
+                % to 'preserve' the DataFileOutputDirectory, save it
+                % locally and then assign it back to the struct
+                data_file_output_directory = app.VIPR.DataFileOutputDirectory;
+                app.VIPR = LoadVIPR().loadVIPR(dlg, app.VIPR.DataDirectory);
+                app.VIPR.DataFileOutputDirectory = data_file_output_directory;
             catch ME
-                if strcmp(ME.identifier, 'LoadVIPR:get_data_directory:cancel')
+                if strcmp(ME.identifier, 'LoadVIPR:getDataDirectory:cancel')
                     return;
                 else
                     rethrow(ME);
                 end
             end
-
             cla(app.Vasculature3DAxes);
             app.DataDirectoryLabel.Text = app.VIPR.DataDirectory;
+            if strcmp(app.VIPR.DataFileOutputDirectory, "")
+                subdir = "analysis";
+                directory = fullfile(app.VIPR.DataDirectory, subdir);
+                app.VIPR.DataFileOutputDirectory = directory;
+            end
+            app.DataFileOutputLabel.Text = app.VIPR.DataFileOutputDirectory;
             app.backgroundPhaseCorrectionButtonPushed();
+            app.featureExtractionButtonPushed();
+            app.vesselSelectionButtonPushed(app.VIPR);
         end
 
         % Button pushed function: DBConnectionButton
         function databaseConnectionButtonPushed(app, ~)
-            warning('This function is not yet programmed');
-            app.DatabaseLabel.Text = "This.is.where.db.connection.would.be";
+            % TODO: add menu to change/select datasource
+            % to use: setup datasource with proper authentication, change
+            % datasource and other database object parameters to reflect
+            ds = "schrage_lab_db";
+            conn = database(ds, '', '');
+            if isempty(conn.Message)
+                app.VIPR.Conn = conn;
+                app.DatabaseLabel.Text = strcat("Connected: ", conn.DataSource);
+            end
+        end
+        
+        % Button pushed function: DataFileOutputButton
+        function dataFileOutputButtonPushed(app, ~)
+            % start search in DataFileOutputDirectory if defined; otherwise
+            % start in the pwd
+            if strcmp(app.VIPR.DataFileOutputDirectory, "")
+                directory = uigetdir(app.VIPR.DataFileOutputDirectory);
+            else
+                directory = uigetdir();
+            end
+            
+            % if uigetdir was not canceled
+            if directory ~= 0
+                subdir = "analysis";
+                directory = fullfile(directory, subdir);
+                % need to get the return args to suppress the warning that
+                % the dir already exists
+                [~, msg, msgID] = mkdir(directory);
+                if ~strcmp(msgID, 'MATLAB:MKDIR:DirectoryExists')
+                    error(msg);
+                end
+                app.VIPR.DataFileOutputDirectory = directory;
+                app.DataFileOutputLabel.Text = directory;
+            end
         end
 
         % Button pushed function: BackgroundPhaseCorrectionButton
@@ -369,7 +440,7 @@ classdef CenterlineToolApp < matlab.apps.AppBase
             
             if isfield(app.VIPR, 'BranchMat') && isfield(app.VIPR, 'BranchList')
                 try
-                    app.VesselSelectionApp = VesselSelectionApp(app); %#ok<ADPROPLC>
+                    app.VesselSelectionApp = VesselSelectionApp(app.VIPR); %#ok<ADPROPLC>
                 catch ME
                     delete(app.VesselSelectionApp);
                     rethrow(ME);
@@ -411,9 +482,7 @@ classdef CenterlineToolApp < matlab.apps.AppBase
             end
             fprintf('Done calculating parameter for all vessels!\n');
             
-            % TODO: wrap in try/catch to delete GUIs if error
-            linker = AppLinker(app.VIPR, @ParameterPlotApp);
-            app.Vessel3DApp = Vessel3DApp(app.VIPR, linker);
+            linker = AppLinker(app.VIPR);
         end
         
         % Toolbar selection callback
@@ -457,6 +526,20 @@ classdef CenterlineToolApp < matlab.apps.AppBase
 
     % general functions
     methods (Access = private)
+        
+        % create local db file to store data
+        function makeLocalDb(app, directory)
+            dbfile = fullfile(directory, 'vipr.db');
+            try
+                app.Conn = sqlite(dbfile, 'create');
+            catch ME
+                if strcmp(ME.identifier, 'database:sqlite:fileExists')
+                    app.Conn = sqlite(dbfile, 'connect');
+                else
+                    rethrow(ME);
+                end
+            end
+        end
         
         function viewAngiogram(app)
             disp('View 3D Vasculature');

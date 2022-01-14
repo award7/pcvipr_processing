@@ -29,7 +29,6 @@ classdef VesselSelectionApp < matlab.apps.AppBase & MAGrgb
     
     % Properties that correspond to app components (con't)
     properties (Access = private, Hidden)
-        CenterlineToolApp           CenterlineToolApp;
         ParentGridLayout            matlab.ui.container.GridLayout
         ChildGridLayout1            matlab.ui.container.GridLayout
         ChildGridLayout2            matlab.ui.container.GridLayout
@@ -58,6 +57,10 @@ classdef VesselSelectionApp < matlab.apps.AppBase & MAGrgb
         SagittalCrosshairs;
         CoronalCrosshairs;
         AxialCrosshairs;
+    end
+    
+    properties (Access = public)
+        VIPR;
     end
     
     % App creation and deletion
@@ -377,7 +380,55 @@ classdef VesselSelectionApp < matlab.apps.AppBase & MAGrgb
             app.MX2 = size(app.MAGR, 2);
             app.MX3 = size(app.MAGR, 3);
         end
-               
+        
+        % create sqlite db file to store image values, thus removing the 
+        % repeated calculation calls
+        function create_tmp_db(app)
+            % make sqlite file
+            dbfile = fullfile(app.VIPR.DataDirectory, 'vessel_selection.db');
+            conn = sqlite(dbfile, 'create');
+            
+            % MAGR is square, typically 320x320x320
+            cols = sprintf('COL%d', [1:size(app.MAGR, 1)]);
+            
+            % rm trailing comma
+            cols = cols(1:end-1);
+            
+            % create tables
+            query = ['CREATE TABLE sagittal(' cols ');'];
+            exec(conn, query);
+            
+            query = ['CREATE TABLE coronal(' cols ');'];
+            exec(conn, query);
+            
+            query = ['CREATE TABLE axial(' cols ');'];
+            exec(conn, query);
+            
+            % convert to cell array for data insertion
+            cols = strsplit(cols);
+            
+            % calculate data for sagittal image
+            data = permute(cat(1, app.MAGR(app.XSlice,:,:), ...
+                                   app.MAGG(app.XSlice,:,:), ...
+                                   app.MAGB(app.XSlice,:,:)), ...
+                                   [3 2 1]);
+            insert(conn, 'sagittal', cols, data);
+            
+            % calculate data for coronal image
+            data = permute(cat(2, app.MAGR(:,app.YSlice,:), ...
+                                  app.MAGG(:,app.YSlice,:), ...
+                                  app.MAGB(:,app.YSlice,:)), ...
+                                  [3 1 2]);
+            insert(conn, 'coronal', cols, data);
+                          
+            % calculate data for axial image
+            data = cat(3, app.MAGR(:,:,app.ZSlice), ...
+                          app.MAGG(:,:,app.ZSlice), ...
+                          app.MAGB(:,:,app.ZSlice));
+            insert(conn, 'axial', cols, data);
+            
+        end
+        
     end
     
     % Image creation and interactivity
@@ -386,37 +437,37 @@ classdef VesselSelectionApp < matlab.apps.AppBase & MAGrgb
         % create images
         function img = create_sagittal_image(app)
             img = permute(cat(1, app.MAGR(app.XSlice,:,:), ...
-                                                       app.MAGG(app.XSlice,:,:), ...
-                                                       app.MAGB(app.XSlice,:,:)), ...
-                                                       [3 2 1]);
+                                   app.MAGG(app.XSlice,:,:), ...
+                                   app.MAGB(app.XSlice,:,:)), ...
+                                   [3 2 1]);
             sz = size(img, 1);
             img = insertText(img, [sz/2 0], 'S', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterTop');
             img = insertText(img, [sz/2 sz], 'I', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterBottom');
-            img = insertText(img, [5 sz/2], 'A', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterTop');
-            img = insertText(img, [sz-5 sz/2], 'P', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterTop');
+            img = insertText(img, [5 sz/2], 'L', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterTop');
+            img = insertText(img, [sz-5 sz/2], 'R', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterTop');
         end
 
         function img = create_coronal_image(app)
             img = permute(cat(2, app.MAGR(:,app.YSlice,:), ...
-                                                      app.MAGG(:,app.YSlice,:), ...
-                                                      app.MAGB(:,app.YSlice,:)), ...
-                                                      [3 1 2]);
+                                  app.MAGG(:,app.YSlice,:), ...
+                                  app.MAGB(:,app.YSlice,:)), ...
+                                  [3 1 2]);
             sz = size(img, 1);
             img = insertText(img, [sz/2 0], 'S', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterTop');
             img = insertText(img, [sz/2 sz], 'I', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterBottom');
-            img = insertText(img, [5 sz/2], 'R', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterTop');
-            img = insertText(img, [sz-5 sz/2], 'L', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterTop');
+            img = insertText(img, [5 sz/2], 'A', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterTop');
+            img = insertText(img, [sz-5 sz/2], 'P', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterTop');
         end
         
         function img = create_axial_image(app)
             img = cat(3, app.MAGR(:,:,app.ZSlice), ...
-                                              app.MAGG(:,:,app.ZSlice), ...
-                                              app.MAGB(:,:,app.ZSlice));
+                          app.MAGG(:,:,app.ZSlice), ...
+                          app.MAGB(:,:,app.ZSlice));
             sz = size(img, 1);
-            img = insertText(img, [sz/2 0], 'R', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterTop');
-            img = insertText(img, [sz/2 sz], 'L', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterBottom');
-            img = insertText(img, [5 sz/2], 'A', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterTop');
-            img = insertText(img, [sz-5 sz/2], 'P', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterTop');
+            img = insertText(img, [sz/2 0], 'A', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterTop');
+            img = insertText(img, [sz/2 sz], 'P', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterBottom');
+            img = insertText(img, [5 sz/2], 'L', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterTop');
+            img = insertText(img, [sz-5 sz/2], 'R', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterTop');
         end
         
         % create crosshairs
@@ -458,9 +509,9 @@ classdef VesselSelectionApp < matlab.apps.AppBase & MAGrgb
     methods (Access = private)
 
         % Code that executes after component creation
-        function startupFcn(app, CenterlineToolApp)
-            app.CenterlineToolApp = CenterlineToolApp;
-            app.mag_rgb(app.CenterlineToolApp.VIPR.MAG, app.CenterlineToolApp.VIPR.Segment);
+        function startupFcn(app, VIPR)
+            app.VIPR = VIPR;
+            app.mag_rgb(app.VIPR.MAG, app.VIPR.Segment);
             app.init_slices();
             app.init_mx();
             app.update_coordinate_labels();
@@ -540,7 +591,7 @@ classdef VesselSelectionApp < matlab.apps.AppBase & MAGrgb
             end 
             fprintf('Segmenting %s...\n', vessel);
             app.set_xyz();
-            segmentObj = SegmentVessel(app.CenterlineToolApp.VIPR);
+            segmentObj = SegmentVessel(app.VIPR);
             try
                 [branchNumber, branchActual, timeMIPVessel] = segmentObj.main(app.XCoordinate, app.YCoordinate, app.ZCoordinate);
             catch ME
@@ -573,7 +624,7 @@ classdef VesselSelectionApp < matlab.apps.AppBase & MAGrgb
         % Toolbar selection callback
         function toolbar_value_changed(app, event)
             tb = event.Source.Parent.Tag;
-            limits = [0 app.CenterlineToolApp.VIPR.Resolution];
+            limits = [0 app.VIPR.Resolution];
             if strcmp(tb, "sagittal_tb")
                 app.SagittalAxes.XLim = limits;
                 app.SagittalAxes.YLim = limits;
@@ -809,7 +860,7 @@ classdef VesselSelectionApp < matlab.apps.AppBase & MAGrgb
             and XCoordinate = res - Position(2)
             TODO: ensure the XCoordinate and YCoordinate are the same as the old method
             %}
-%             app.XCoordinate = app.CenterlineToolApp.VIPR.Resolution - app.YSlice;
+%             app.XCoordinate = app.VIPR.Resolution - app.YSlice;
 %             app.YCoordinate = app.XSlice;
 %             app.ZCoordinate = app.ZSlice;
 
@@ -822,18 +873,18 @@ classdef VesselSelectionApp < matlab.apps.AppBase & MAGrgb
             vessel = regexprep(vessel, '\W', '');
             % important so that it deletes any previous data associated
             % with the vessel
-            app.CenterlineToolApp.VIPR.Vessel.(vessel) = struct;
-            app.CenterlineToolApp.VIPR.Vessel.(vessel).XCoordinate = app.XCoordinate;
-            app.CenterlineToolApp.VIPR.Vessel.(vessel).YCoordinate = app.YCoordinate;
-            app.CenterlineToolApp.VIPR.Vessel.(vessel).ZCoordinate = app.ZCoordinate;
-            app.CenterlineToolApp.VIPR.Vessel.(vessel).BranchNumber = branchNumber;
-            app.CenterlineToolApp.VIPR.Vessel.(vessel).BranchActual = branchActual;
-            app.CenterlineToolApp.VIPR.Vessel.(vessel).TimeMIPVessel = timeMIPVessel;
+            app.VIPR.Vessel.(vessel) = struct;
+            app.VIPR.Vessel.(vessel).XCoordinate = app.XCoordinate;
+            app.VIPR.Vessel.(vessel).YCoordinate = app.YCoordinate;
+            app.VIPR.Vessel.(vessel).ZCoordinate = app.ZCoordinate;
+            app.VIPR.Vessel.(vessel).BranchNumber = branchNumber;
+            app.VIPR.Vessel.(vessel).BranchActual = branchActual;
+            app.VIPR.Vessel.(vessel).TimeMIPVessel = timeMIPVessel;
         end
         
         function remove_from_struct(app)
             % check if any vessels were even selected
-            if ~isfield(app.CenterlineToolApp.VIPR, 'Vessel')
+            if ~isfield(app.VIPR, 'Vessel')
                 return;
             end
             
@@ -843,14 +894,14 @@ classdef VesselSelectionApp < matlab.apps.AppBase & MAGrgb
             vesselTableNames = regexprep(vesselTableNames, '\W', '');
             
             % get vessels in struct
-            structNames = fieldnames(app.CenterlineToolApp.VIPR.Vessel);
+            structNames = fieldnames(app.VIPR.Vessel);
             
             % compare the lists, remove from struct any vessels not in
             % table
             toRemove = setdiff(structNames, vesselTableNames);
             
             for k = 1:numel(toRemove)
-                app.CenterlineToolApp.VIPR.Vessel = rmfield(app.CenterlineToolApp.VIPR.Vessel, toRemove{k});
+                app.VIPR.Vessel = rmfield(app.VIPR.Vessel, toRemove{k});
             end
             
         end
@@ -869,7 +920,7 @@ classdef VesselSelectionApp < matlab.apps.AppBase & MAGrgb
             restore the previous state
             %}
             disp("Saving vessel selection parameters...");
-            directory = fullfile(app.CenterlineToolApp.VIPR.DataDirectory, 'saved_analysis');
+            directory = fullfile(app.VIPR.DataDirectory, 'saved_analysis');
             if ~exist(directory, 'dir')
                 mkdir(directory);
             end
@@ -891,7 +942,7 @@ classdef VesselSelectionApp < matlab.apps.AppBase & MAGrgb
             when combined with the required input arg to the app, will
             restore the previous state
             %}
-            directory = fullfile(app.CenterlineToolApp.VIPR.DataDirectory, 'saved_analysis');
+            directory = fullfile(app.VIPR.DataDirectory, 'analysis');
             fname = 'vessel_coordinates.txt';
             
             if exist(fullfile(directory, fname), 'file')
