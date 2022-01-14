@@ -15,10 +15,10 @@ classdef VesselSelectionApp < matlab.apps.AppBase & MAGrgb
         SagittalImage;
         CoronalImage;
         AxialImage;
-        MN = 1;
-        MX1;
-        MX2;
-        MX3;
+        AbsLowerBound = 1;
+        XSliceMax;
+        YSliceMax;
+        ZSliceMax;
         XCoordinate;
         YCoordinate;
         ZCoordinate;
@@ -60,7 +60,7 @@ classdef VesselSelectionApp < matlab.apps.AppBase & MAGrgb
     end
     
     properties (Access = public)
-        VIPR;
+        CenterlineToolApp;
     end
     
     % App creation and deletion
@@ -376,16 +376,16 @@ classdef VesselSelectionApp < matlab.apps.AppBase & MAGrgb
         end
         
         function init_mx(app)
-            app.MX1 = size(app.MAGR, 1);
-            app.MX2 = size(app.MAGR, 2);
-            app.MX3 = size(app.MAGR, 3);
+            app.XSliceMax = size(app.MAGR, 1);
+            app.YSliceMax = size(app.MAGR, 2);
+            app.ZSliceMax = size(app.MAGR, 3);
         end
         
         % create sqlite db file to store image values, thus removing the 
         % repeated calculation calls
         function create_tmp_db(app)
             % make sqlite file
-            dbfile = fullfile(app.VIPR.DataDirectory, 'vessel_selection.db');
+            dbfile = fullfile(app.CenterlineToolApp.VIPR.DataDirectory, 'vessel_selection.db');
             conn = sqlite(dbfile, 'create');
             
             % MAGR is square, typically 320x320x320
@@ -436,6 +436,7 @@ classdef VesselSelectionApp < matlab.apps.AppBase & MAGrgb
        
         % create images
         function img = create_sagittal_image(app)
+            % returns a 320x320x3 array
             img = permute(cat(1, app.MAGR(app.XSlice,:,:), ...
                                    app.MAGG(app.XSlice,:,:), ...
                                    app.MAGB(app.XSlice,:,:)), ...
@@ -509,9 +510,9 @@ classdef VesselSelectionApp < matlab.apps.AppBase & MAGrgb
     methods (Access = private)
 
         % Code that executes after component creation
-        function startupFcn(app, VIPR)
-            app.VIPR = VIPR;
-            app.mag_rgb(app.VIPR.MAG, app.VIPR.Segment);
+        function startupFcn(app, CenterlineToolApp)
+            app.CenterlineToolApp = CenterlineToolApp;
+            app.mag_rgb(app.CenterlineToolApp.VIPR.MAG, app.CenterlineToolApp.VIPR.Segment);
             app.init_slices();
             app.init_mx();
             app.update_coordinate_labels();
@@ -591,7 +592,7 @@ classdef VesselSelectionApp < matlab.apps.AppBase & MAGrgb
             end 
             fprintf('Segmenting %s...\n', vessel);
             app.set_xyz();
-            segmentObj = SegmentVessel(app.VIPR);
+            segmentObj = SegmentVessel(app.CenterlineToolApp.VIPR);
             try
                 [branchNumber, branchActual, timeMIPVessel] = segmentObj.main(app.XCoordinate, app.YCoordinate, app.ZCoordinate);
             catch ME
@@ -624,7 +625,7 @@ classdef VesselSelectionApp < matlab.apps.AppBase & MAGrgb
         % Toolbar selection callback
         function toolbar_value_changed(app, event)
             tb = event.Source.Parent.Tag;
-            limits = [0 app.VIPR.Resolution];
+            limits = [0 app.CenterlineToolApp.VIPR.Resolution];
             if strcmp(tb, "sagittal_tb")
                 app.SagittalAxes.XLim = limits;
                 app.SagittalAxes.YLim = limits;
@@ -699,10 +700,10 @@ classdef VesselSelectionApp < matlab.apps.AppBase & MAGrgb
     methods (Access = private)
         
         function update_sagittal_image(app)
-            if app.XSlice > app.MX1
-                app.XSlice = app.MX1;
-            elseif app.XSlice < app.MN
-                app.XSlice = app.MN;
+            if app.XSlice > app.XSliceMax
+                app.XSlice = app.XSliceMax;
+            elseif app.XSlice < app.AbsLowerBound
+                app.XSlice = app.AbsLowerBound;
             else
                 img = app.create_sagittal_image();
                 set(app.SagittalImage, 'CData', img);
@@ -710,10 +711,10 @@ classdef VesselSelectionApp < matlab.apps.AppBase & MAGrgb
         end
         
         function update_coronoal_image(app)
-            if app.YSlice > app.MX2
-                app.YSlice = app.MX2;
-            elseif app.YSlice < app.MN
-                app.YSlice = app.MN;
+            if app.YSlice > app.YSliceMax
+                app.YSlice = app.YSliceMax;
+            elseif app.YSlice < app.AbsLowerBound
+                app.YSlice = app.AbsLowerBound;
             else
                 img = app.create_coronal_image();
                 set(app.CoronalImage, 'CData', img);
@@ -721,10 +722,10 @@ classdef VesselSelectionApp < matlab.apps.AppBase & MAGrgb
         end
         
         function update_axial_image(app)
-            if app.ZSlice > app.MX3
-                app.ZSlice = app.MX3;
-            elseif app.ZSlice < app.MN
-                app.ZSlice = app.MN;
+            if app.ZSlice > app.ZSliceMax
+                app.ZSlice = app.ZSliceMax;
+            elseif app.ZSlice < app.AbsLowerBound
+                app.ZSlice = app.AbsLowerBound;
             else
                 img = app.create_axial_image();
                 set(app.AxialImage, 'CData', img);
@@ -860,7 +861,7 @@ classdef VesselSelectionApp < matlab.apps.AppBase & MAGrgb
             and XCoordinate = res - Position(2)
             TODO: ensure the XCoordinate and YCoordinate are the same as the old method
             %}
-%             app.XCoordinate = app.VIPR.Resolution - app.YSlice;
+%             app.XCoordinate = app.CenterlineToolApp.VIPR.Resolution - app.YSlice;
 %             app.YCoordinate = app.XSlice;
 %             app.ZCoordinate = app.ZSlice;
 
@@ -873,18 +874,18 @@ classdef VesselSelectionApp < matlab.apps.AppBase & MAGrgb
             vessel = regexprep(vessel, '\W', '');
             % important so that it deletes any previous data associated
             % with the vessel
-            app.VIPR.Vessel.(vessel) = struct;
-            app.VIPR.Vessel.(vessel).XCoordinate = app.XCoordinate;
-            app.VIPR.Vessel.(vessel).YCoordinate = app.YCoordinate;
-            app.VIPR.Vessel.(vessel).ZCoordinate = app.ZCoordinate;
-            app.VIPR.Vessel.(vessel).BranchNumber = branchNumber;
-            app.VIPR.Vessel.(vessel).BranchActual = branchActual;
-            app.VIPR.Vessel.(vessel).TimeMIPVessel = timeMIPVessel;
+            app.CenterlineToolApp.VIPR.Vessel.(vessel) = struct;
+            app.CenterlineToolApp.VIPR.Vessel.(vessel).XCoordinate = app.XCoordinate;
+            app.CenterlineToolApp.VIPR.Vessel.(vessel).YCoordinate = app.YCoordinate;
+            app.CenterlineToolApp.VIPR.Vessel.(vessel).ZCoordinate = app.ZCoordinate;
+            app.CenterlineToolApp.VIPR.Vessel.(vessel).BranchNumber = branchNumber;
+            app.CenterlineToolApp.VIPR.Vessel.(vessel).BranchActual = branchActual;
+            app.CenterlineToolApp.VIPR.Vessel.(vessel).TimeMIPVessel = timeMIPVessel;
         end
         
         function remove_from_struct(app)
             % check if any vessels were even selected
-            if ~isfield(app.VIPR, 'Vessel')
+            if ~isfield(app.CenterlineToolApp.VIPR, 'Vessel')
                 return;
             end
             
@@ -894,14 +895,14 @@ classdef VesselSelectionApp < matlab.apps.AppBase & MAGrgb
             vesselTableNames = regexprep(vesselTableNames, '\W', '');
             
             % get vessels in struct
-            structNames = fieldnames(app.VIPR.Vessel);
+            structNames = fieldnames(app.CenterlineToolApp.VIPR.Vessel);
             
             % compare the lists, remove from struct any vessels not in
             % table
             toRemove = setdiff(structNames, vesselTableNames);
             
             for k = 1:numel(toRemove)
-                app.VIPR.Vessel = rmfield(app.VIPR.Vessel, toRemove{k});
+                app.CenterlineToolApp.VIPR.Vessel = rmfield(app.CenterlineToolApp.VIPR.Vessel, toRemove{k});
             end
             
         end
@@ -920,7 +921,7 @@ classdef VesselSelectionApp < matlab.apps.AppBase & MAGrgb
             restore the previous state
             %}
             disp("Saving vessel selection parameters...");
-            directory = fullfile(app.VIPR.DataDirectory, 'saved_analysis');
+            directory = fullfile(app.CenterlineToolApp.VIPR.DataDirectory, 'saved_analysis');
             if ~exist(directory, 'dir')
                 mkdir(directory);
             end
@@ -942,7 +943,7 @@ classdef VesselSelectionApp < matlab.apps.AppBase & MAGrgb
             when combined with the required input arg to the app, will
             restore the previous state
             %}
-            directory = fullfile(app.VIPR.DataDirectory, 'analysis');
+            directory = fullfile(app.CenterlineToolApp.VIPR.DataDirectory, 'analysis');
             fname = 'vessel_coordinates.txt';
             
             if exist(fullfile(directory, fname), 'file')
