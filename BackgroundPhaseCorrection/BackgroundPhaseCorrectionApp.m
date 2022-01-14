@@ -1,7 +1,7 @@
-classdef BackgroundPhaseCorrectionApp < matlab.apps.AppBase & BackgroundPhaseCorrection
+classdef BackgroundPhaseCorrectionApp < matlab.apps.AppBase% & BackgroundPhaseCorrection
 
     % Properties that correspond to app components
-    properties (Access = public)
+    properties (Access = private)
         UIFigure                    matlab.ui.Figure
         ParentGridLayout            matlab.ui.container.GridLayout
         ChildGridLayout1            matlab.ui.container.GridLayout
@@ -30,7 +30,7 @@ classdef BackgroundPhaseCorrectionApp < matlab.apps.AppBase & BackgroundPhaseCor
     end
     
     properties (Access = private)
-        CenterlineToolApp;
+        VIPR;
         MagImage;
         VelocityImage;
         Map = [gray(200); jet(10)];
@@ -372,10 +372,10 @@ classdef BackgroundPhaseCorrectionApp < matlab.apps.AppBase & BackgroundPhaseCor
 
         % Code that executes after component creation
         function startupFcn(app, varargin)
-            app.CenterlineToolApp = varargin{1};
-            app.VX = app.CenterlineToolApp.VIPR.VelocityMean(:,:,:,1);
-            app.VY = app.CenterlineToolApp.VIPR.VelocityMean(:,:,:,2);
-            app.VZ = app.CenterlineToolApp.VIPR.VelocityMean(:,:,:,3);
+            app.VIPR = varargin{1};
+            app.VX = app.VIPR.VelocityMean(:,:,:,1);
+            app.VY = app.VIPR.VelocityMean(:,:,:,2);
+            app.VZ = app.VIPR.VelocityMean(:,:,:,3);
             app.load_();
             app.update_images();
         end
@@ -476,25 +476,25 @@ classdef BackgroundPhaseCorrectionApp < matlab.apps.AppBase & BackgroundPhaseCor
         end
         
         % Button pushed function: ResetFitButton
-        function reset_fit_button_pushed(app, event)
+        function reset_fit_button_pushed(app, ~)
             app.reset_fit();
             app.update_images();
         end
 
         % Button pushed function: UpdateButton
-        function update_button_pushed(app, event)
-            mask = app.create_angiogram(app.CenterlineToolApp.VIPR.MAG);
+        function update_button_pushed(app, ~)
+            mask = app.create_angiogram(app.VIPR.MAG);
             app.poly_fit_3d(mask);
             app.update_images();
         end
 
         % Button pushed function: DoneButton
-        function done_button_pushed(app, event)
+        function done_button_pushed(app, ~)
             app.UIFigure.WindowState = "minimized";
             waitfor(app.UIFigure, 'WindowState', 'minimized');
-            app.CenterlineToolApp.VIPR = app.poly_correction(app.CenterlineToolApp.VIPR);
-            app.CenterlineToolApp.VIPR.TimeMIP = CalculateAngiogram.calculate_angiogram(app.CenterlineToolApp.VIPR);
-            [~, app.CenterlineToolApp.VIPR.Segment] = CalculateSegment(app.CenterlineToolApp.VIPR);
+            app.VIPR = app.poly_correction(app.VIPR);
+            app.VIPR.TimeMIP = CalculateAngiogram.calculate_angiogram(app.VIPR);
+            [~, app.VIPR.Segment] = CalculateSegment(app.VIPR);
             app.save_();
             app.UIFigureCloseRequest();
         end
@@ -510,7 +510,7 @@ classdef BackgroundPhaseCorrectionApp < matlab.apps.AppBase & BackgroundPhaseCor
         end
 
         % Close request function: UIFigure
-        function UIFigureCloseRequest(app, event)
+        function UIFigureCloseRequest(app, ~)
             delete(app);
         end
         
@@ -520,7 +520,7 @@ classdef BackgroundPhaseCorrectionApp < matlab.apps.AppBase & BackgroundPhaseCor
     methods (Access = private)
              
         function update_images(app)
-            [magSlice, velocitySlice] = app.get_slices(app.CenterlineToolApp.VIPR);
+            [magSlice, velocitySlice] = app.get_slices(app.VIPR);
             app.MagImage.CData = magSlice;
             app.VelocityImage.CData = velocitySlice;
         end
@@ -539,7 +539,7 @@ classdef BackgroundPhaseCorrectionApp < matlab.apps.AppBase & BackgroundPhaseCor
             restore the previous state
             %}
             disp("Saving background phase correction parameters...");
-            directory = fullfile(app.CenterlineToolApp.VIPR.DataDirectory, 'saved_analysis');
+            directory = fullfile(app.VIPR.DataDirectory, 'saved_analysis');
             if ~exist(directory, 'dir')
                 mkdir(directory);
             end
@@ -569,7 +569,7 @@ classdef BackgroundPhaseCorrectionApp < matlab.apps.AppBase & BackgroundPhaseCor
             when combined with the required input arg to the app, will
             restore the previous state
             %}
-            directory = fullfile(app.CenterlineToolApp.VIPR.DataDirectory, 'saved_analysis');
+            directory = fullfile(app.VIPR.DataDirectory, 'analysis');
             fname = 'phase_correction.mat';
             
             if exist(fullfile(directory, fname), 'file')
