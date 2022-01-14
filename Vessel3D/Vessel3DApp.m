@@ -18,9 +18,9 @@ classdef Vessel3DApp < matlab.apps.AppBase
         WindowSpinner           matlab.ui.control.Spinner;
         VasculatureAxesTB;
         FullVasculaturePatch;
-        ITPlane                 makeITPlane;
+        ITPlane;
         VIPR;
-        Linker                  AppLinker;
+        Linker;
     end
     
     % App creation and deletion
@@ -34,11 +34,9 @@ classdef Vessel3DApp < matlab.apps.AppBase
 
             % Register the app with App Designer
             app.registerApp(app.UIFigure)
-            
-            app.Linker = varargin{1};
 
             % Execute the startup function
-            % app.runStartupFcn(@(app)startupFcn(app, varargin{:}))
+            app.runStartupFcn(@(app)startupFcn(app, varargin{:}))
             
             if nargout == 0
                 clear app
@@ -222,16 +220,16 @@ classdef Vessel3DApp < matlab.apps.AppBase
         function updateLowerVoxelComponents(app, value)
             app.LowerVoxelSpinner.Value = value;
             app.LowerVoxelSlider.Value = value;
-%             app.deletePlane();
-%             app.addPlane();
+            app.deletePlane();
+            app.addPlane();
         end
         
         function updateWindowComponents(app, windowValue, upperLimit)
             app.WindowSpinner.Value = windowValue;
             app.LowerVoxelSpinner.Limits(2) = upperLimit;
             app.LowerVoxelSlider.Limits(2) = upperLimit;
-%             app.deletePlane();
-%             app.addPlane();
+            app.deletePlane();
+            app.addPlane();
         end
         
     end
@@ -343,8 +341,8 @@ classdef Vessel3DApp < matlab.apps.AppBase
         
         % Code that executes after component creation
         function startupFcn(app, varargin)
-            app.VIPR = varargin{1};
-            app.Linker = varargin{2};
+            app.Linker = varargin{1};
+            app.VIPR = varargin{2};
             
             app.ITPlane = makeITPlane(app.VIPR.BranchList);
             app.populateDropdown();
