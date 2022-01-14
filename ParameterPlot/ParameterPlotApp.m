@@ -28,6 +28,7 @@ classdef ParameterPlotApp < matlab.apps.AppBase
         Legend;
         VIPR;
         Linker                  AppLinker;
+        CurrentVessel;
     end
     
     % App creation and deletion
@@ -41,11 +42,9 @@ classdef ParameterPlotApp < matlab.apps.AppBase
 
             % Register the app with App Designer
             app.registerApp(app.UIFigure)
-            
-            app.Linker = varargin{1};
-            
+
             % Execute the startup function
-            % app.runStartupFcn(@(app)startupFcn(app, varargin{:}))
+            app.runStartupFcn(@(app)startupFcn(app, varargin{:}))
             
             if nargout == 0
                 clear app
@@ -87,6 +86,7 @@ classdef ParameterPlotApp < matlab.apps.AppBase
             app.createSpinnerSaveDataEnd();
             app.createButtonCancel();
             app.createButtonSave();
+            app.createLegend();
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';
@@ -97,6 +97,8 @@ classdef ParameterPlotApp < matlab.apps.AppBase
             app.UIFigure = uifigure('Visible', 'off');
             app.UIFigure.Name = 'Parameter Plots';
             app.UIFigure.WindowState = 'maximized';
+            app.UIFigure.CloseRequestFcn = app.createCallbackFcn(@uiFigureCloseRequest, true);
+            app.UIFigure.WindowKeyPressFcn = app.createCallbackFcn(@uiWindowKeyPressFcn, true);
         end
 
         function createGridParent(app)
@@ -201,11 +203,7 @@ classdef ParameterPlotApp < matlab.apps.AppBase
         
         function createTableData(app)
             app.DataTable = uitable(app.ChildGridLayout2);
-            app.DataTable.ColumnName = {'Parameter'; 'Mean'; 'SD'};
-            % TODO: change to rows instead of RowName if RowName does not
-            % appear for visaulization
-            app.DataTable.RowName = {'Area', 'Diameter', 'Mean Velocity', 'Max Velocity', ...
-                                        'FlowPerBeat', 'P.I.', 'WSS', 'Flow'};
+            app.DataTable.ColumnName = {'Parameter'; 'Mean'; 'CoV'};
             app.DataTable.Layout.Row = 1;
             app.DataTable.Layout.Column = 1;
         end
@@ -259,7 +257,7 @@ classdef ParameterPlotApp < matlab.apps.AppBase
             app.WindowSpinner.Limits = [1 100];
             app.WindowSpinner.Step = 1;
             app.WindowSpinner.Value = 5;
-            app.WindowSpinner.ValueChangedFcn = app.createCallbackFcn(@lowerVoxelSpinnerValueChanged, true);
+            app.WindowSpinner.ValueChangedFcn = app.createCallbackFcn(@windowSpinnerValueChanged, true);
         end
         
         function createSpinnerSaveDataStart(app)
@@ -288,6 +286,12 @@ classdef ParameterPlotApp < matlab.apps.AppBase
             app.SaveButton.Text = 'Save Data';
         end
         
+        function createLegend(app)
+            app.Legend = legend(app.TimeResolvedAxes);
+            app.Legend.AutoUpdate = 'on';
+            app.Legend.Location = 'northeast';
+        end
+        
     end
     
     % initialization methods
@@ -302,9 +306,9 @@ classdef ParameterPlotApp < matlab.apps.AppBase
                         app.WallShearStressAxes, ...
                         app.PulsatilityIndexAxes];
             
-            vessels = fieldnames(app.CenterlineToolApp.VIPR.Vessel);
-            parameters = fieldnames(app.CenterlineToolApp.VIPR.Vessel.(vessels{1}));
-            upperLimitX = numel(app.CenterlineToolApp.VIPR.Vessel.(vessels{1}).Area);
+            vessels = fieldnames(app.VIPR.Vessel);
+            parameters = fieldnames(app.VIPR.Vessel.(vessels{1}));
+            upperLimitX = numel(app.VIPR.Vessel.(vessels{1}).Area);
             
             notForPlots = {'BranchNumber', 'BranchActual', 'TimeMIPVessel', 'XCoordinate', 'YCoordinate', 'ZCoordinate'};
             for k = 1:numel(allAxes)
@@ -312,7 +316,7 @@ classdef ParameterPlotApp < matlab.apps.AppBase
                     % allAxes(k).XLabel.String = xLabel;
                     allAxes(k).XLim = [1 upperLimitX];
                     
-                    yData = app.CenterlineToolApp.VIPR.Vessel.(vessels{1}).(parameters{k});
+                    yData = app.VIPR.Vessel.(vessels{1}).(parameters{k});
                     
                     % y-limit 10% < min y-value
                     minY = min(yData) * 0.90;
@@ -324,8 +328,8 @@ classdef ParameterPlotApp < matlab.apps.AppBase
                 end
             end
             
-            resolution = app.CenterlineToolApp.VIPR.Resolution;
-            noFrames = app.CenterlineToolApp.VIPR.NoFrames;
+            resolution = app.VIPR.Resolution;
+            noFrames = app.VIPR.NoFrames;
             x = resolution/1000 * linspace(1, noFrames, noFrames);
             app.TimeResolvedAxes.XTick = x;
             app.TimeResolvedAxes.XTickLabelRotation = 45;
@@ -337,55 +341,7 @@ classdef ParameterPlotApp < matlab.apps.AppBase
             app.SaveDataEndSpinner.Value = upperLimit;
             app.SaveDataEndSpinner.Limits = [1 upperLimit];
         end
-       
-        %{
-        function init_plot_x_limits(app, axis_handle, vessel_obj)
-            % voxel count for upper x limit
-            max_x_value = numel(vessel_obj);
-            
 
-%             app.areaAxes.XLim = [1 max_x_value];
-%             y_data = app.handles.values.area; %%%%
-%             [min_y_value, max_y_value] = min_max_y(y_data);
-%             app.areaAxes.YLim = [min_y_value max_y_value];
-%             
-%             app.diameterAxes.XLim = [1 max_x_value];
-%             y_data = foo;
-%             [min_y_value, max_y_value] = min_max_y(y_data);
-%             app.diameterAxes.YLim = [min_y_value max_y_value];
-%             
-%             app.meanVelAxes.XLim = [1 max_x_value];
-%             y_data = foo;
-%             [min_y_value, max_y_value] = min_max_y(y_data);
-%             app.meanVelAxes.YLim = [min_y_value max_y_value];
-%             
-%             app.maxVelAxes.XLim = [1 max_x_value];
-%             y_data = foo;
-%             [min_y_value, max_y_value] = min_max_y(y_data);
-%             app.maxVelAxes.YLim = [min_y_value max_y_value];
-%             
-%             app.flowPerBeatAxes.XLim = [1 max_x_value];
-%             y_data = foo;
-%             [min_y_value, max_y_value] = min_max_y(y_data);
-%             app.flowPerBeatAxes.YLim = [min_y_value max_y_value];
-%             
-%             app.WallShearStressAxes.XLim = [1 max_x_value];
-%             y_data = foo;
-%             [min_y_value, max_y_value] = min_max_y(y_data);
-%             app.WallShearStressAxes.YLim = [min_y_value max_y_value];
-%             
-%             app.pulsatilityAxes.XLim = [1 max_x_value];
-%             y_data = foo;
-%             [min_y_value, max_y_value] = min_max_y(y_data);
-%             app.pulsatilityAxes.YLim = [min_y_value max_y_value];
-%             
-        end
-
-        function init_plot_y_limits(app, axis_handle, vessel_obj)
-            app.(axis_handle).YLim = [min_y_value max_y_value];
-        end
-        %}
-         
         %{
         function init_toolbar_icons(app)
             app.tb1 = axtoolbar(app.areaAxes, {'rotate', 'pan', 'zoomin', 'zoomout', 'export'});
@@ -427,16 +383,15 @@ classdef ParameterPlotApp < matlab.apps.AppBase
                     
             parameters = {'Area', ...
                             'Diameter', ...
-                            'MaxVelocity', ...
                             'MeanVelocity', ...
+                            'MaxVelocity', ...
                             'FlowPerHeartCycle', ...
                             'WallShearStress', ...
-                            'PulsatilityIndex', ...
-                            'FlowPulsatile'};
+                            'PulsatilityIndex'};
             
             for k = 1:numel(allAxes)
                 yData = app.CurrentVessel.(parameters{k});
-                plot(xData, yData, 'Parent', app.(allAxes{k}));
+                plot(xData, yData, 'Parent', allAxes(k));
             end
             %{
             % area plot
@@ -475,8 +430,8 @@ classdef ParameterPlotApp < matlab.apps.AppBase
             
             lowerBound = app.LowerVoxelSpinner.Value;
             window = app.WindowSpinner.Value;
-            resolution = app.CenterlineToolApp.VIPR.Resolution;
-            noFrames = app.CenterlineToolApp.VIPR.NoFrames;
+            resolution = app.VIPR.Resolution;
+            noFrames = app.VIPR.NoFrames;
             
             xData = resolution/1000*linspace(1, noFrames, noFrames);
             yData = app.CurrentVessel.FlowPulsatile(lowerBound:lowerBound + window - 1, :);
@@ -505,9 +460,9 @@ classdef ParameterPlotApp < matlab.apps.AppBase
                         app.WallShearStressAxes, ...
                         app.PulsatilityIndexAxes];
             for k = 1:numel(allAxes)
-                windowPatch = patch(app.(allAxes(k)));
+                windowPatch = patch(allAxes(k));
                 windowPatch.XData = xData;
-                yLimit = max(app.(allAxes(k)).YLim);
+                yLimit = max(allAxes(k).YLim);
                 windowPatch.YData = [0 0 yLimit yLimit];
                 windowPatch.FaceColor = color;
                 windowPatch.FaceAlpha = alpha;
@@ -596,95 +551,42 @@ classdef ParameterPlotApp < matlab.apps.AppBase
     methods (Access = private)
         
         function updateLegend(app)
-            if app.WindowSpinner.Value <= 5 && strcmp(app.LegendSwitch.Value, 'On')
-                lowerBound = app.LowerVoxelSpinner.Value;
-                window = app.WindowSpinner.Value;
-                voxelNumbers = [lowerBound:lowerBound + window - 1];
-                app.Legend = legend(app.TimeResolvedAxes);
-                app.Legend.String = append('Voxel ', string(voxelNumbers));
-                app.Legend.Units = 'Normalized';
-                % TODO: ensure legend is appropriately positioned
-                app.Legend.Position = [0.875 0.4 0.1 0.2];
-            else
-                delete(app.Legend);
-            end
-        end
-        
-        function updateDataTable(app)           
-            % TODO: calculate mean and SD for each parameter
-            % add to table
-            
-            %{
-            % area plot
-            y_data = app.current_vessel.area';
-            window_variance = voxel_window_variance(app, y_data);
-            app.areaVarianceLabel.Text = ['Variance: ', num2str(window_variance)];
-            
-            % diameter plot
-            y_data = app.current_vessel.diam';
-            window_variance = voxel_window_variance(app, y_data);
-            app.diameterVarianceLabel.Text = ['Variance: ', num2str(window_variance)];
-            
-            % mean velocity plot
-            y_data = app.current_vessel.meanVel';
-            window_variance = voxel_window_variance(app, y_data);
-            app.meanVelVarianceLabel.Text = ['Variance: ', num2str(window_variance)];
-            
-            % max velocity plot
-            y_data = app.current_vessel.maxVel';
-            window_variance = voxel_window_variance(app, y_data);
-            app.maxVelVarianceLabel.Text = ['Variance: ', num2str(window_variance)];
-            
-            % flow/beat plot
-            y_data = app.current_vessel.flowPerHeartCycle';
-            window_variance = voxel_window_variance(app, y_data);
-            app.flowPerBeatVarianceLabel.Text = ['Variance: ', num2str(window_variance)];
-            
-            % wss plot
-            y_data = app.current_vessel.wss_simple_avg';
-            window_variance = voxel_window_variance(app, y_data);
-            app.wssVarianceLabel.Text = ['Variance: ', num2str(window_variance)];
-            
-            % PI plot
-            y_data = app.current_vessel.PI';
-            window_variance = voxel_window_variance(app, y_data);
-            app.pulsatilityVarianceLabel.Text = ['Variance: ', num2str(window_variance)];
-            
-            % pulsatile flow plot
-            y_data = app.current_vessel.flow_pulsatile;
-            window_variance = voxel_window_variance(app, y_data);
-            app.resolvedFlowVarianceLabel.Text = ['Variance: ', num2str(window_variance)];
-
-            % mean variance calculation
-            function window_variance = voxel_window_variance(app, y_data)
-                lower_bound = app.LowerVoxelSpinner.Value;
-                window = app.WindowSpinner.Value;
-                window_segment = y_data(lower_bound:lower_bound + window - 1,:);
-                window_variance = var(window_segment, 0, 1);
-                sum_of_variance = sum(window_variance);
-                window_variance = mean(sum_of_variance);
-            end 
-            %}
-        end
-        
-        function updateSpinnerValue(app)
-            lower_bound = app.LowerVoxelSpinner.Value;
             window = app.WindowSpinner.Value;
-            
-            upper_limit = app.upper_bound - window;
-            app.LowerVoxelSpinner.Limits = [1 upper_limit];
-            
-            if lower_bound + window > app.upper_bound
-                lower_bound = app.upper_bound - window;
+            if window > 5
+                app.Legend.Visible = 'off';
+            else
+                app.Legend.Visible = 'on';
+%                 lowerBound = app.LowerVoxelSpinner.Value;
+%                 voxelNumbers = [lowerBound:lowerBound + window - 1];
+%                 app.Legend.String = append('Voxel ', string(voxelNumbers));
             end
+        end
+        
+        function updateDataTable(app)       
+            parameters = {'Area', ...
+                            'Diameter', ...
+                            'MeanVelocity', ...
+                            'MaxVelocity', ...
+                            'FlowPerHeartCycle', ...
+                            'WallShearStress', ...
+                            'PulsatilityIndex', ...
+                            'FlowPulsatile'};
             
-            app.deleteWindowShading();
-            if lower_bound + window <= app.upper_bound
-                app.addWindowShading();
+            window = app.WindowSpinner.Value;
+            lower_voxel = app.LowerVoxelSpinner.Value;
+            range = [lower_voxel:lower_voxel + window - 1];
+            
+            data = cell(numel(parameters), 3);
+            for k = 1:numel(parameters)
+                param_mean = mean(app.CurrentVessel.(parameters{k})(range));
+                param_sd = std(app.CurrentVessel.(parameters{k})(range));
+                param_cov = (param_sd / param_mean) * 100;
+                
+                data{k, 1} = parameters{k};
+                data{k, 2} = param_mean;
+                data{k, 3} = param_cov;
             end
-
-            app.plotTimeResolvedData();
-            app.updateVariance();
+            app.DataTable.Data = data;
         end
         
     end
@@ -694,15 +596,19 @@ classdef ParameterPlotApp < matlab.apps.AppBase
         
         function updateLowerVoxelComponents(app, value)
             app.LowerVoxelSpinner.Value = value;
-%             app.deleteWindowShading();
-%             app.addWindowShading();
+            app.deleteWindowShading();
+            app.addWindowShading();
+            app.plotTimeResolvedData();
+            app.updateDataTable();
         end
         
         function updateWindowComponents(app, windowValue, upperLimit)
             app.WindowSpinner.Value = windowValue;
             app.LowerVoxelSpinner.Limits(2) = upperLimit;
-%             app.deleteWindowShading();
-%             app.addWindowShading();
+            app.deleteWindowShading();
+            app.addWindowShading();
+            app.plotTimeResolvedData();
+            app.updateDataTable();
         end
         
     end
@@ -711,15 +617,13 @@ classdef ParameterPlotApp < matlab.apps.AppBase
     methods (Access = private)
 
         % Code that executes after component creation
-        function startupFcn(app, CenterlineToolApp)
-            app.CenterlineToolApp = CenterlineToolApp;
+        function startupFcn(app, varargin)
+            app.Linker = varargin{1};
+            app.VIPR = varargin{2};
             
             % set initial values
-            names = fieldnames(app.CenterlineToolApp.VIPR.vessel);
-            app.currentVessel = app.CenterlineToolApp.VIPR.vessel.(names{1});
-            
-            app.createSpinnerWindow();
-            app.createSpinnerLowerVoxel();
+            names = fieldnames(app.VIPR.Vessel);
+            app.CurrentVessel = app.VIPR.Vessel.(names{1});
             
             % plot
             app.plotTimeAverageData();
@@ -751,26 +655,18 @@ classdef ParameterPlotApp < matlab.apps.AppBase
             app.save_plots();
             app.save_vessel();
         end
-
-        % Value changed function: LegendSwitch
-        function legendSwitchValueChanged(app, ~)
-            value = app.LegendSwitch.Value;
-            switch value
-                case 'Off'
-                    % delete legend if it exists
-                    try
-                        delete(app.Legend);
-                    catch
+        
+        % Window key pressed function
+        function uiWindowKeyPressFcn(app, event)
+            switch char(event.Modifier)
+                case 'control'
+                    if strcmpi(event.Key, 'w')
+                        app.uiFigureCloseRequest();
                     end
-                otherwise
-                    % add legend if window is small
-                    % a large legend increases rendering time & decreases
-                    % performance
-                    updateLegend(app);
             end
         end
-
-        % Close request function: parameter_plot_fig
+        
+        % Close request function: ParameterPlot
         function uiFigureCloseRequest(app, ~)
             app.Linker.closeRequest();
         end
