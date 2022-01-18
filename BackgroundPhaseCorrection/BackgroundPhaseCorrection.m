@@ -147,8 +147,8 @@ classdef BackgroundPhaseCorrection < handle
             mag_slice = single(VIPR.MAG(:,:,slice));
 
             xrange = single(linspace(-1, 1, size(self.VX, 1)));
-            yrange = single(linspace(-1, 1, size(self.VY, 1)));
-            zrange = single(linspace(-1, 1, size(self.VZ, 1)));
+            yrange = single(linspace(-1, 1, size(self.VY, 1))); % TODO: check if the indexes are correct as they differ from line 89
+            zrange = single(linspace(-1, 1, size(self.VZ, 1))); % TODO: check if the indexes are correct as they differ from line 90
             
             % Range
             if self.ApplyCorrection == 1
@@ -186,6 +186,7 @@ classdef BackgroundPhaseCorrection < handle
                 fprintf('    %s\n', name_);
                 back = self.evaluate_poly(x, y, z, polyFit(k));
                 back = single(back);
+                % TODO: read in this data via datastore and remove from memory
                 VIPR.VelocityMean(:, :, :, k) = VIPR.VelocityMean(:, :, :, k) - back;
                 for m = 0:VIPR.NoFrames - 1
                     VIPR.Velocity(:, :, :, k, m+1) = VIPR.Velocity(:, :, :, k, m+1) - back;
