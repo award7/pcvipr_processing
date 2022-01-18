@@ -431,16 +431,31 @@ classdef VesselSelectionApp < matlab.apps.AppBase & MAGrgb
         
     end
     
+    
+    properties
+        SagittalData;
+        CoronalData;
+        AxialData;
+    end
+    
     % Image creation and interactivity
     methods (Access = private)
-       
+        
         % create images
         function img = create_sagittal_image(app)
+            app.SagittalData = zeros(320,320,3,app.XSliceMax, 'uint8');
+            
             % returns a 320x320x3 array
-            img = permute(cat(1, app.MAGR(app.XSlice,:,:), ...
-                                   app.MAGG(app.XSlice,:,:), ...
-                                   app.MAGB(app.XSlice,:,:)), ...
-                                   [3 2 1]);
+            for slice = app.AbsLowerBound:app.XSliceMax
+                app.XSlice = slice;
+                app.SagittalData(:,:,:,slice) = permute(cat(1, app.MAGR(app.XSlice,:,:), ...
+                                                               app.MAGG(app.XSlice,:,:), ...
+                                                               app.MAGB(app.XSlice,:,:)), ...
+                                                               [3 2 1]);
+            end
+            
+            app.init_slices()
+            img = app.SagittalData(:, :, :, app.XSlice);
             sz = size(img, 1);
             img = insertText(img, [sz/2 0], 'S', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterTop');
             img = insertText(img, [sz/2 sz], 'I', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterBottom');
@@ -449,10 +464,17 @@ classdef VesselSelectionApp < matlab.apps.AppBase & MAGrgb
         end
 
         function img = create_coronal_image(app)
-            img = permute(cat(2, app.MAGR(:,app.YSlice,:), ...
-                                  app.MAGG(:,app.YSlice,:), ...
-                                  app.MAGB(:,app.YSlice,:)), ...
-                                  [3 1 2]);
+            app.CoronalData = zeros(320,320,3,app.YSliceMax, 'uint8');
+            % returns a 320x320x3 array
+            for slice = app.AbsLowerBound:app.YSliceMax
+                app.YSlice = slice;
+                app.CoronalData(:,:,:,slice) = permute(cat(2, app.MAGR(:,app.YSlice,:), ...
+                                                                app.MAGG(:,app.YSlice,:), ...
+                                                                app.MAGB(:,app.YSlice,:)), ...
+                                                                [3 1 2]);
+            end
+            app.init_slices();
+            img = app.CoronalData(:,:,:,app.YSlice);
             sz = size(img, 1);
             img = insertText(img, [sz/2 0], 'S', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterTop');
             img = insertText(img, [sz/2 sz], 'I', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterBottom');
@@ -461,15 +483,49 @@ classdef VesselSelectionApp < matlab.apps.AppBase & MAGrgb
         end
         
         function img = create_axial_image(app)
-            img = cat(3, app.MAGR(:,:,app.ZSlice), ...
-                          app.MAGG(:,:,app.ZSlice), ...
-                          app.MAGB(:,:,app.ZSlice));
+            app.AxialData = zeros(320,320,3,app.ZSliceMax, 'uint8');
+            % returns a 320x320x3 array
+            for slice = app.AbsLowerBound:app.ZSliceMax
+                app.ZSlice = slice;
+                app.AxialData(:,:,:,slice) = cat(3, app.MAGR(:,:,app.ZSlice), ...
+                                                      app.MAGG(:,:,app.ZSlice), ...
+                                                      app.MAGB(:,:,app.ZSlice));
+            end
+            app.init_slices();
+            img = app.AxialData(:,:,:,app.ZSlice);
             sz = size(img, 1);
             img = insertText(img, [sz/2 0], 'A', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterTop');
             img = insertText(img, [sz/2 sz], 'P', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterBottom');
             img = insertText(img, [5 sz/2], 'L', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterTop');
             img = insertText(img, [sz-5 sz/2], 'R', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterTop');
         end
+        
+        function img = updateSagittalImage(app)
+            img = app.SagittalData(:,:,:,app.XSlice);
+			img = insertText(img, [sz/2 0], 'S', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterTop');
+            img = insertText(img, [sz/2 sz], 'I', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterBottom');
+            img = insertText(img, [5 sz/2], 'L', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterTop');
+            img = insertText(img, [sz-5 sz/2], 'R', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterTop');
+        end
+        
+        function img = updateCoronalImage(app)
+            img = app.CoronalData(:,:,:,app.YSlice);
+			sz = size(img, 1);
+            img = insertText(img, [sz/2 0], 'S', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterTop');
+            img = insertText(img, [sz/2 sz], 'I', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterBottom');
+            img = insertText(img, [5 sz/2], 'A', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterTop');
+            img = insertText(img, [sz-5 sz/2], 'P', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterTop');
+        end
+        
+        function img = updateAxialImage(app)
+            img = app.AxialData(:,:,:,app.ZSlice);
+			sz = size(img, 1);
+            img = insertText(img, [sz/2 0], 'A', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterTop');
+            img = insertText(img, [sz/2 sz], 'P', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterBottom');
+            img = insertText(img, [5 sz/2], 'L', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterTop');
+            img = insertText(img, [sz-5 sz/2], 'R', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterTop');
+        end
+        
         
         % create crosshairs
         function create_sagittal_crosshairs(app)
@@ -705,7 +761,7 @@ classdef VesselSelectionApp < matlab.apps.AppBase & MAGrgb
             elseif app.XSlice < app.AbsLowerBound
                 app.XSlice = app.AbsLowerBound;
             else
-                img = app.create_sagittal_image();
+                img = app.updateSagittalImage();
                 set(app.SagittalImage, 'CData', img);
             end
         end
@@ -716,7 +772,7 @@ classdef VesselSelectionApp < matlab.apps.AppBase & MAGrgb
             elseif app.YSlice < app.AbsLowerBound
                 app.YSlice = app.AbsLowerBound;
             else
-                img = app.create_coronal_image();
+                img = app.updateCoronalImage();
                 set(app.CoronalImage, 'CData', img);
             end
         end
@@ -727,7 +783,7 @@ classdef VesselSelectionApp < matlab.apps.AppBase & MAGrgb
             elseif app.ZSlice < app.AbsLowerBound
                 app.ZSlice = app.AbsLowerBound;
             else
-                img = app.create_axial_image();
+                img = app.updateAxialImage();
                 set(app.AxialImage, 'CData', img);
             end
         end
