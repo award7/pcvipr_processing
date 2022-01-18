@@ -12,7 +12,7 @@ classdef CenterlineToolApp < matlab.apps.AppBase
         % interaction with CenterlineToolApp...
     
     % Properties that correspond to app components
-    properties (Access = private, Hidden)
+    properties (Access = public, Hidden)
         UIFigure                            matlab.ui.Figure
         ParentGridLayout                    matlab.ui.container.GridLayout
         ChildGridLayout1                    matlab.ui.container.GridLayout
@@ -113,7 +113,9 @@ classdef CenterlineToolApp < matlab.apps.AppBase
             % Create UIFigure and hide until all components are created
             app.UIFigure = uifigure('Visible', 'off');
             app.UIFigure.Name = 'Centerline Tool (main)';
-            app.UIFigure.WindowState = 'maximized';
+            app.UIFigure.Units = 'normalized';
+            app.UIFigure.Position = [1/4 1/4 1/2 1/2];
+%             app.UIFigure.WindowState = 'maximized';
             app.UIFigure.CloseRequestFcn = createCallbackFcn(app, @uiFigureCloseRequest, true);
             app.UIFigure.WindowKeyPressFcn = createCallbackFcn(app, @uiWindowKeyPressFcn, true);
         end
@@ -297,7 +299,6 @@ classdef CenterlineToolApp < matlab.apps.AppBase
             app.DataFileOutputLabel.Text = '[path]';
             app.DataFileOutputLabel.HorizontalAlignment = 'right';
         end
-        
 
     end
 
@@ -326,6 +327,7 @@ classdef CenterlineToolApp < matlab.apps.AppBase
             dlg.Value = 0;
             dlg.ShowPercentage = 'on';
             dlg.Cancelable = 'on';
+            
             try
                 % workaround as the VIPR struct get overwritten here
                 % to 'preserve' the DataFileOutputDirectory, save it
@@ -340,6 +342,7 @@ classdef CenterlineToolApp < matlab.apps.AppBase
                     rethrow(ME);
                 end
             end
+            
             cla(app.Vasculature3DAxes);
             app.DataDirectoryLabel.Text = app.VIPR.DataDirectory;
             if strcmp(app.VIPR.DataFileOutputDirectory, "")
@@ -349,8 +352,8 @@ classdef CenterlineToolApp < matlab.apps.AppBase
             end
             app.DataFileOutputLabel.Text = app.VIPR.DataFileOutputDirectory;
             app.backgroundPhaseCorrectionButtonPushed();
-            % app.featureExtractionButtonPushed();
-            % app.vesselSelectionButtonPushed();
+            app.featureExtractionButtonPushed();
+            app.vesselSelectionButtonPushed();
         end
 
         % Button pushed function: DBConnectionButton
@@ -472,6 +475,8 @@ classdef CenterlineToolApp < matlab.apps.AppBase
                 error("No vessels selected. Perform vessel selection first");
             end
             
+            % TODO: read velocity data into array and pass to calculateParameters()
+            
             vesselNames = fieldnames(app.VIPR.Vessel);
             calc = calculateParameters();
             for k = 1:numel(vesselNames)
@@ -525,9 +530,9 @@ classdef CenterlineToolApp < matlab.apps.AppBase
                 delete(app.VesselSelectionApp);
             end
             
-            if isobject(app.Vessel3DApp) && isvalid(app.Vessel3DApp)
-                delete(app.Vessel3DApp);
-            end
+%             if isobject(app.Vessel3DApp) && isvalid(app.Vessel3DApp)
+%                 delete(app.Vessel3DApp);
+%             end
             
             delete(app);
         end
