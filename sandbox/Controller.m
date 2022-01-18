@@ -21,7 +21,7 @@ classdef Controller < handle
         
     end
     
-    % callbacks
+    % callbacks from menu
     methods (Access = public)
         
         function backgroundPhaseCorrectionMenuButtonCallback(self, src, evt)
@@ -75,10 +75,18 @@ classdef Controller < handle
         
     end
     
+    % callbacks from BackgroundPhaseCorrectionView
+    methods (Access = public)
+        function test(app, src, evt)
+            disp('passed');
+        end
+    end
+    
     % load data methods
     methods (Access = private)
         
-        function 
+        function load(app)
+        end
         
     end
     
@@ -86,7 +94,7 @@ classdef Controller < handle
     methods (Access = private)
         
         function bgpcMain(self)
-            disp('bar');
+            BackgroundPhaseCorrectionView(self);
         end
         
     end
