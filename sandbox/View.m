@@ -19,7 +19,7 @@ classdef View < matlab.apps.AppBase
     properties (Access = public)
         AnalysisMenu;
         
-        ShowFullVasculatureMenuButton;
+        ViewFullVasculatureMenuButton;
         BackgroundPhaseCorrectionMenuButton;
         DrawROIMenuButton;
         ViewParametricMapMenuButton;
@@ -102,6 +102,7 @@ classdef View < matlab.apps.AppBase
             
             % analysis menu
             app.createAnalysisMenu();
+            app.createViewFullVasculatureMenuButton(controller);
             app.createBackgroundPhaseCorrectionMenuButton(controller);
             app.createDrawROIMenuButton(controller);
             app.createViewParametricMapMenuButton(controller);
@@ -146,7 +147,13 @@ classdef View < matlab.apps.AppBase
             app.AnalysisMenu = uimenu(app.UIFigure);
             app.AnalysisMenu.Text = '&Analysis';
         end
-
+        
+        function createViewFullVasculatureMenuButton(app, controller)
+            app.ViewFullVasculatureMenuButton = uimenu(app.AnalysisMenu);
+            app.ViewFullVasculatureMenuButton.Text = 'View Full Vasculature';
+            app.ViewFullVasculatureMenuButton.MenuSelectedFcn = createCallbackFcn(app, @controller.viewFullVasculatureMenuButtonCallback, true);
+        end
+        
         function createBackgroundPhaseCorrectionMenuButton(app, controller)
             app.BackgroundPhaseCorrectionMenuButton = uimenu(app.AnalysisMenu);
             app.BackgroundPhaseCorrectionMenuButton.Text = 'Perform Background Phase Correction';

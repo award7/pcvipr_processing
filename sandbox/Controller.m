@@ -52,6 +52,9 @@ classdef Controller < handle
         function drawROIMenuButtonCallback(self, src, evt)
         end
         
+        function viewFullVasculatureMenuButtonCallback(self, src, evt)
+        end
+        
         function viewParametricMapMenuButtonCallback(self, src, evt)
         end
         
@@ -69,6 +72,13 @@ classdef Controller < handle
         
         function setDataOutputParametersMenuCallback(self, src, evt)
         end
+        
+    end
+    
+    % load data methods
+    methods (Access = private)
+        
+        function 
         
     end
     
