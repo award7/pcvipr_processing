@@ -8,6 +8,7 @@ classdef Controller < handle
     methods (Access = public)
         
         function self = Controller()
+            clc;
             self.View = View(self);
             self.Model = Model();
         end
@@ -20,7 +21,7 @@ classdef Controller < handle
         
     end
     
-    % menu button callbacks
+    % callbacks
     methods (Access = public)
         
         function backgroundPhaseCorrectionMenuButtonCallback(self, src, evt)
@@ -42,6 +43,31 @@ classdef Controller < handle
         
         function exitMenuButtonCallback(self, src, evt)
             self.delete();
+        end
+        
+        function testDbConnectionMenuButtonCallback(self, src, evt)
+            
+        end
+        
+        function drawROIMenuButtonCallback(self, src, evt)
+        end
+        
+        function viewParametricMapMenuButtonCallback(self, src, evt)
+        end
+        
+        function vesselSelectionMenuButtonCallback(self, src, evt)
+        end
+        
+        function segmentVesselsMenuButtonCallback(self, src, evt)
+        end
+        
+        function vessel3dMenuButtonCallback(self, src, evt)
+        end
+        
+        function parameterPlotMenuButtonCallback(self, src, evt)
+        end
+        
+        function setDataOutputParametersMenuCallback(self, src, evt)
         end
         
     end
