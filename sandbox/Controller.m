@@ -5,12 +5,17 @@ classdef Controller < handle
         Model;
     end
     
+    properties (Access = public)
+        State   AppState;
+    end
+    
     methods (Access = public)
         
         function self = Controller()
             clc;
             self.View = View(self);
             self.Model = Model();
+            self.State = AppState.Main;
         end
         
         function delete(self)
@@ -25,7 +30,13 @@ classdef Controller < handle
     methods (Access = public)
         
         function backgroundPhaseCorrectionMenuButtonCallback(self, src, evt)
-            self.bgpcMain();
+            % display background phase correction images and widgets
+            % don't reload if it's currently in this state
+            if strcmp(self.State, 'BackgroundPhaseCorrection')
+                return;
+            end
+            BackgroundPhaseCorrectionView(self);
+            self.State = AppState.BackgroundPhaseCorrection;
         end
         
         function connectToDbMenuButtonCallback(self, src, evt)
@@ -77,9 +88,46 @@ classdef Controller < handle
     
     % callbacks from BackgroundPhaseCorrectionView
     methods (Access = public)
-        function test(app, src, evt)
-            disp('passed');
+        
+        % bgpc = BackGround Phase Correction
+        function bgpcImageValueChangedCallback(self, src, evt)
+            value = evt.Value;
+            
+            switch evt.Source.Type
+                case 'uislider'
+                    src.ImageSlider.Value = value;
+                    value = floor(value) / 100;
+                    src.ImageSpinner.Value = value;
+                case 'uispinner'
+                    src.ImageSpinner.Value = value;
+                    value = round(value, 2) * 100;
+                    src.ImageSlider.Value = value;
+                    value = value / 100;
+            end
+
+            self.Model.Image = value;
+%             src.update_images();
         end
+        
+        function bgpcVmaxValueChangedCallback(self, src, evt)
+            value = evt.Value;
+            
+            switch evt.Source.Type
+                case 'uislider'
+                    src.VmaxSlider.Value = value;
+                    value = floor(value) / 100;
+                    src.VmaxSpinner.Value = value;
+                case 'uispinner'
+                    src.VmaxSpinner.Value = value;
+                    value = round(value, 2) * 100;
+                    src.VmaxSlider.Value = value;
+                    value = value / 100;
+            end
+
+            self.Model.Vmax = value;
+%             src.update_images();
+        end
+        
     end
     
     % load data methods
@@ -94,7 +142,7 @@ classdef Controller < handle
     methods (Access = private)
         
         function bgpcMain(self)
-            BackgroundPhaseCorrectionView(self);
+            
         end
         
     end
