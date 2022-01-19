@@ -1,6 +1,6 @@
 classdef BackgroundPhaseCorrectionView < matlab.apps.AppBase
     
-    properties (Access = private)
+    properties (Access = public)
         UIFigure
         ParentGridLayout            matlab.ui.container.GridLayout;
         ChildGridLayout1            matlab.ui.container.GridLayout;
@@ -26,11 +26,18 @@ classdef BackgroundPhaseCorrectionView < matlab.apps.AppBase
         UpdateButton                matlab.ui.control.Button
         ResetFitButton              matlab.ui.control.Button
         DoneButton                  matlab.ui.control.Button
+    end
+    
+    properties (Dependent)
+        Map;
+    end
+    
+    methods
         
-        % todo: should I move this to controller or even model??
-        MagImage;
-        VelocityImage;
-        Map = [gray(200); jet(10)];
+        function val = get.Map(self)
+            val = [gray(200); jet(10)];
+        end
+        
     end
     
     methods (Access = public)
@@ -48,8 +55,8 @@ classdef BackgroundPhaseCorrectionView < matlab.apps.AppBase
             app.init_parent_grid();
             app.init_child_grid1();
             app.init_child_grid2();
-            app.init_mag_axes();
-            app.init_velocity_axes();
+            app.init_mag_axes(controller);
+            app.init_velocity_axes(controller);
             app.init_image_label();
             app.init_vmax_label();
             app.init_cd_label();
@@ -100,7 +107,7 @@ classdef BackgroundPhaseCorrectionView < matlab.apps.AppBase
             app.ChildGridLayout2.Layout.Column = 2;
         end
         
-        function init_mag_axes(app)
+        function init_mag_axes(app, controller)
             % Create mag axes
             app.MagAxes = uiaxes(app.ParentGridLayout);
             app.MagAxes.Layout.Row = 1;
@@ -119,11 +126,10 @@ classdef BackgroundPhaseCorrectionView < matlab.apps.AppBase
             app.MagAxes.Color = [0 0 0];
             app.MagAxes.Colormap = app.Map;
             app.MagAxes.DataAspectRatio = [1 1 1];
-            whiteImage = 255 * ones(480, 640, 3, 'uint8');
-            app.MagImage = imagesc(app.MagAxes, 'CData', whiteImage, [0 210]);
+            controller.Model.MagImage = imagesc(app.MagAxes, 'CData', controller.Model.WhiteImage, [0 210]);
         end
         
-        function init_velocity_axes(app)
+        function init_velocity_axes(app, controller)
             % Create velocity axes
             app.VelocityAxes = uiaxes(app.ParentGridLayout);
             app.VelocityAxes.Layout.Row = 2;
@@ -142,8 +148,7 @@ classdef BackgroundPhaseCorrectionView < matlab.apps.AppBase
             app.VelocityAxes.Color = [0 0 0];
             app.VelocityAxes.Colormap = app.Map;
             app.VelocityAxes.DataAspectRatio = [1 1 1];
-            whiteImage = 255 * ones(480, 640, 3, 'uint8');
-            app.VelocityImage = imagesc(app.VelocityAxes, 'CData', whiteImage, [0 210]);
+            controller.Model.VelocityImage = imagesc(app.VelocityAxes, 'CData', controller.Model.WhiteImage, [0 210]);
         end
         
         function init_image_label(app)
@@ -181,6 +186,7 @@ classdef BackgroundPhaseCorrectionView < matlab.apps.AppBase
             app.FitOrderLabel.Text = 'Fit Order';
         end
         
+        
         function init_image_slider(app, controller)
             app.ImageSlider = uislider(app.ChildGridLayout1);
             app.ImageSlider.Layout.Row = 1;
@@ -190,8 +196,8 @@ classdef BackgroundPhaseCorrectionView < matlab.apps.AppBase
             app.ImageSlider.MajorTickLabels = string(0:0.2:1.0);
             app.ImageSlider.Limits = [0 100];
             app.ImageSlider.Value = controller.Model.Image * 100;
-            app.ImageSlider.ValueChangedFcn = app.createCallbackFcn(@image_value_changed, true);
-            app.ImageSlider.ValueChangingFcn = app.createCallbackFcn(@image_value_changed, true);
+            app.ImageSlider.ValueChangedFcn = app.createCallbackFcn(@controller.test, true);
+            app.ImageSlider.ValueChangingFcn = app.createCallbackFcn(@controller.test, true);
         end
         
         function init_vmax_slider(app, controller)
@@ -233,6 +239,7 @@ classdef BackgroundPhaseCorrectionView < matlab.apps.AppBase
             app.NoiseSlider.ValueChangingFcn = app.createCallbackFcn(@noise_threshold_value_changed, true);
         end
                 
+        
         function init_image_spinner(app, controller)
             app.ImageSpinner = uispinner(app.ChildGridLayout1);
             app.ImageSpinner.Layout.Row = 1;
@@ -240,7 +247,7 @@ classdef BackgroundPhaseCorrectionView < matlab.apps.AppBase
             app.ImageSpinner.Limits = [0 1];
             app.ImageSpinner.Step = 0.01;
             app.ImageSpinner.Value = controller.Model.Image;
-            app.ImageSpinner.ValueChangedFcn = app.createCallbackFcn(@image_value_changed, true);
+            app.ImageSpinner.ValueChangedFcn = app.createCallbackFcn(@controller.test, true);
         end
         
         function init_vmax_spinner(app, controller)
@@ -282,6 +289,7 @@ classdef BackgroundPhaseCorrectionView < matlab.apps.AppBase
             app.FitOrderSpinner.Value = controller.Model.FitOrder;
             app.FitOrderSpinner.ValueChangedFcn = app.createCallbackFcn(@fit_order_value_changed, true);
         end
+        
         
         function init_apply_correction_cb(app, controller)
             app.ApplyCorrectionCheckbox = uicheckbox(app.ChildGridLayout2);
