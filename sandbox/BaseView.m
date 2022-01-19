@@ -41,7 +41,7 @@ classdef BaseView < matlab.apps.AppBase
     % app creation
     methods (Access = public)
         
-        function app = View(controller)
+        function app = BaseView(controller)
             app.createBaseFigure(controller);
             app.createBaseFigure(controller);
             app.registerApp(app.UIFigure);
