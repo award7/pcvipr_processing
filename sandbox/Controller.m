@@ -8,6 +8,12 @@ classdef Controller < handle
     UI components are in the Views. Data for images, etc. are stored in the
     Model.
     
+    Style Convention:
+        *PascalCase for properties
+        *camelCase for methods
+        *snake_case for variables
+        *PascalCase for names in name-value pairs to follow Matlab style
+    
     Abbreviations/Acronyms
         *bgpc = BackGround Phase Correction
 
@@ -75,7 +81,20 @@ classdef Controller < handle
         end
         
         function loadDataMenuButtonCallback(self, src, evt)
-            % todo: call uigetdir
+            if isfolder(self.Model.DataDirectory)
+                data_directory = uigetdir(self.Model.DataDirectory);
+            else
+                data_directory = uigetdir(pwd);
+            end
+            
+            if data_directory == 0
+                return;
+            end
+            self.Model.DataDirectory = data_directory;
+            
+            self.Model.VelocityFS = LoadViprDS.getVelocityFileDataStore(self.Model.DataDirectory);
+            self.Model.VelocityMeanFS = LoadViprDS.getVelocityMeanFileDataStore(self.Model.DataDirectory);
+            self.Model.MagDS = LoadViprDS.getMagFileDataStore(self.Model.DataDirectory);
         end
         
         function setDataOutputPathMenuButtonCallback(self, src, evt)
@@ -115,7 +134,7 @@ classdef Controller < handle
         end
         
     end
-    
+
     % callbacks from BackgroundPhaseCorrectionView
     methods (Access = public)
         
@@ -191,7 +210,7 @@ classdef Controller < handle
                     value = value / 100;
             end
 
-            self.Model.VmaxNoiseThreshold = value;
+            self.Model.NoiseThreshold = value;
 %             src.update_images();
         end
         
@@ -207,7 +226,8 @@ classdef Controller < handle
         end
         
         function bgpcUpdateButtonPushed(self, src, evt)
-            mask = app.create_angiogram(app.CenterlineToolApp.VIPR.MAG);
+            % todo: get args to pass in
+            mask = BackgroundPhaseCorrection.createAngiogram();
             app.poly_fit_3d(mask);
             app.update_images();
         end
@@ -218,8 +238,6 @@ classdef Controller < handle
         end
         
         function bgpcDoneButtonPushed(self, src, evt)
-            app.UIFigure.WindowState = "minimized";
-            waitfor(app.UIFigure, 'WindowState', 'minimized');
             app.CenterlineToolApp.VIPR = app.poly_correction(app.CenterlineToolApp.VIPR);
             app.CenterlineToolApp.VIPR.TimeMIP = CalculateAngiogram.calculate_angiogram(app.CenterlineToolApp.VIPR);
             [~, app.CenterlineToolApp.VIPR.Segment] = CalculateSegment(app.CenterlineToolApp.VIPR);
@@ -227,22 +245,14 @@ classdef Controller < handle
         end
 
     end
-    
-    % load data methods
-    methods (Access = private)
-        
-        function load(app)
-        end
-        
-    end
-    
+       
     % bgpc methods
     methods (Access = private)
         
         function bgpcUpdateImages(self)
-            [magSlice, velocitySlice] = app.get_slices(app.CenterlineToolApp.VIPR);
-            app.MagImage.CData = magSlice;
-            app.VelocityImage.CData = velocitySlice;
+            [mag_slice, velocity_slice] = app.get_slices(app.CenterlineToolApp.VIPR);
+            app.MagImage.CData = mag_slice;
+            app.VelocityImage.CData = velocity_slice;
         end
         
     end
