@@ -8,18 +8,23 @@ classdef BaseView < matlab.apps.AppBase
     % base figure properties
     properties (Access = public)
         UIFigure        matlab.ui.Figure;
+        
+    end
+    
+    % base grid properties
+    properties (Access = private)
         ParentGrid      matlab.ui.container.GridLayout;
     end
     
     % file menu bar properties
-    properties (Access = public)
+    properties (Access = private)
         FileMenu            matlab.ui.container.Menu;
         LoadDataMenuButton  matlab.ui.container.Menu;
         ExitMenuButton      matlab.ui.container.Menu;
     end
     
     % analysis menu bar properties
-    properties (Access = public)
+    properties (Access = private)
         AnalysisMenu                            matlab.ui.container.Menu;
         ViewFullVasculatureMenuButton           matlab.ui.container.Menu;
         BackgroundPhaseCorrectionMenuButton     matlab.ui.container.Menu;
@@ -33,7 +38,7 @@ classdef BaseView < matlab.apps.AppBase
     end
     
     % data source menu bar properties
-    properties (Access = public)
+    properties (Access = private)
         DataSourceMenu                      matlab.ui.container.Menu;
         ConnectToDbMenuButton               matlab.ui.container.Menu;
         TestDbConnectionMenuButton          matlab.ui.container.Menu;
