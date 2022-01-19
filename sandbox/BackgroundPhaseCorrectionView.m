@@ -86,8 +86,8 @@ classdef BackgroundPhaseCorrectionView < matlab.apps.AppBase
             app.ParentGrid.RowHeight = {'1x', '1x'};
         end
         
-        % grid housing labels, sliders, and spinners
         function createChildGrid1(app)
+            % grid housing labels, sliders, and spinners
             app.ChildGrid1 = uigridlayout(app.ParentGrid);
             app.ChildGrid1.ColumnWidth = {'1x', '1x', '1x'};
             app.ChildGrid1.RowHeight = {'1x', '1x', '1x', '1x'};
@@ -95,8 +95,8 @@ classdef BackgroundPhaseCorrectionView < matlab.apps.AppBase
             app.ChildGrid1.Layout.Column = 2;
         end
 
-        % grid housing buttons
         function createChildGrid2(app)
+            % grid housing buttons
             app.ChildGrid2 = uigridlayout(app.ParentGrid);
             app.ChildGrid2.ColumnWidth = {'1x'};
             app.ChildGrid2.RowHeight = {'1x', '1x', '1x', '1x'};
@@ -186,7 +186,7 @@ classdef BackgroundPhaseCorrectionView < matlab.apps.AppBase
             app.ImageSlider.Layout.Row = 1;
             app.ImageSlider.Layout.Column = 2;
             app.ImageSlider.MajorTicks = [0:20:100];
-            app.ImageSlider.MinorTicks = [0:5:100];
+            app.ImageSlider.MinorTicks = [5:5:100];
             app.ImageSlider.MajorTickLabels = string(0:0.2:1.0);
             app.ImageSlider.Limits = [0 100];
             app.ImageSlider.Value = controller.Model.Image * 100;
@@ -203,8 +203,8 @@ classdef BackgroundPhaseCorrectionView < matlab.apps.AppBase
             app.VmaxSlider.MajorTickLabels = string(0:0.2:1.0);
             app.VmaxSlider.Value = controller.Model.Vmax;
             app.VmaxSlider.Limits = [0 100];
-            app.VmaxSlider.ValueChangedFcn = app.createCallbackFcn(@vmax_value_changed, true);
-            app.VmaxSlider.ValueChangingFcn = app.createCallbackFcn(@vmax_value_changed, true);
+            app.VmaxSlider.ValueChangedFcn = app.createCallbackFcn(@controller.bgpcVmaxValueChangedCallback, true);
+            app.VmaxSlider.ValueChangingFcn = app.createCallbackFcn(@controller.bgpcVmaxValueChangedCallback, true);
         end
         
         function createCdSlider(app, controller)
@@ -216,8 +216,8 @@ classdef BackgroundPhaseCorrectionView < matlab.apps.AppBase
             app.CDSlider.MajorTickLabels = string(0:0.2:1.0);
             app.CDSlider.Value = controller.Model.CDThreshold * 100;
             app.CDSlider.Limits = [0 100];
-            app.CDSlider.ValueChangedFcn = app.createCallbackFcn(@cd_threshold_value_changed, true);
-            app.CDSlider.ValueChangingFcn = app.createCallbackFcn(@cd_threshold_value_changed, true);
+            app.CDSlider.ValueChangedFcn = app.createCallbackFcn(@controller.bgpcCdThresholdValueChangedCallback, true);
+            app.CDSlider.ValueChangingFcn = app.createCallbackFcn(@controller.bgpcCdThresholdValueChangedCallback, true);
         end
         
         function createNoiseSlider(app, controller)
@@ -229,10 +229,9 @@ classdef BackgroundPhaseCorrectionView < matlab.apps.AppBase
             app.NoiseSlider.Layout.Column = 2;
             app.NoiseSlider.Value = controller.Model.NoiseThreshold * 100;
             app.NoiseSlider.Limits = [0 100];
-            app.NoiseSlider.ValueChangedFcn = app.createCallbackFcn(@noise_threshold_value_changed, true);
-            app.NoiseSlider.ValueChangingFcn = app.createCallbackFcn(@noise_threshold_value_changed, true);
+            app.NoiseSlider.ValueChangedFcn = app.createCallbackFcn(@controller.bgpcNoiseThresholdValueChangedCallback, true);
+            app.NoiseSlider.ValueChangingFcn = app.createCallbackFcn(@controller.bgpcNoiseThresholdValueChangedCallback, true);
         end
-                
         
         function createImageSpinner(app, controller)
             app.ImageSpinner = uispinner(app.ChildGrid1);
@@ -251,7 +250,7 @@ classdef BackgroundPhaseCorrectionView < matlab.apps.AppBase
             app.VmaxSpinner.Limits = [0 1];
             app.VmaxSpinner.Step = 0.01;
             app.VmaxSpinner.Value = controller.Model.Vmax;
-            app.VmaxSpinner.ValueChangedFcn = app.createCallbackFcn(@vmax_value_changed, true);
+            app.VmaxSpinner.ValueChangedFcn = app.createCallbackFcn(@controller.bgpcVmaxValueChangedCallback, true);
         end
         
         function createCdSpinner(app, controller)
@@ -261,7 +260,7 @@ classdef BackgroundPhaseCorrectionView < matlab.apps.AppBase
             app.CDSpinner.Limits = [0 1];
             app.CDSpinner.Step = 0.01;
             app.CDSpinner.Value = controller.Model.CDThreshold;
-            app.CDSpinner.ValueChangedFcn = app.createCallbackFcn(@cd_threshold_value_changed, true);
+            app.CDSpinner.ValueChangedFcn = app.createCallbackFcn(@controller.bgpcCdThresholdValueChangedCallback, true);
         end
         
         function createNoiseSpinner(app, controller)
@@ -271,7 +270,7 @@ classdef BackgroundPhaseCorrectionView < matlab.apps.AppBase
             app.NoiseSpinner.Limits = [0 1];
             app.NoiseSpinner.Step = 0.01;
             app.NoiseSpinner.Value = controller.Model.NoiseThreshold;
-            app.NoiseSpinner.ValueChangedFcn = app.createCallbackFcn(@noise_threshold_value_changed, true);
+            app.NoiseSpinner.ValueChangedFcn = app.createCallbackFcn(@controller.bgpcNoiseThresholdValueChangedCallback, true);
         end
         
         function createFitOrderSpinner(app, controller)
@@ -281,17 +280,16 @@ classdef BackgroundPhaseCorrectionView < matlab.apps.AppBase
             app.FitOrderSpinner.Limits = [0 inf];
             app.FitOrderSpinner.Step = 1;
             app.FitOrderSpinner.Value = controller.Model.FitOrder;
-            app.FitOrderSpinner.ValueChangedFcn = app.createCallbackFcn(@fit_order_value_changed, true);
+            app.FitOrderSpinner.ValueChangedFcn = app.createCallbackFcn(@controller.bgpcFitOrderValueChangedCallback, true);
         end
-        
-        
+
         function createApplyCorrectionCheckbox(app, controller)
             app.ApplyCorrectionCheckbox = uicheckbox(app.ChildGrid2);
             app.ApplyCorrectionCheckbox.Layout.Row = 1;
             app.ApplyCorrectionCheckbox.Layout.Column = 1;
             app.ApplyCorrectionCheckbox.Text = 'Apply Correction';
             app.ApplyCorrectionCheckbox.Value = controller.Model.ApplyCorrection;
-            app.ApplyCorrectionCheckbox.ValueChangedFcn = app.createCallbackFcn(@apply_correction_value_changed, true);
+            app.ApplyCorrectionCheckbox.ValueChangedFcn = app.createCallbackFcn(@controller.bgpcApplyCorrectionValueChangedCallback, true);
         end
         
         function createUpdateButton(app, controller)
@@ -299,7 +297,7 @@ classdef BackgroundPhaseCorrectionView < matlab.apps.AppBase
             app.UpdateButton.Layout.Row = 2;
             app.UpdateButton.Layout.Column = 1;
             app.UpdateButton.Text = 'Update Images';
-            app.UpdateButton.ButtonPushedFcn = app.createCallbackFcn(@update_button_pushed, true);
+            app.UpdateButton.ButtonPushedFcn = app.createCallbackFcn(@controller.bgpcUpdateButtonPushed, true);
         end
         
         function createResetFitButton(app, controller)
@@ -307,7 +305,7 @@ classdef BackgroundPhaseCorrectionView < matlab.apps.AppBase
             app.ResetFitButton.Layout.Row = 3;
             app.ResetFitButton.Layout.Column = 1;
             app.ResetFitButton.Text = 'Reset Fit';
-            app.ResetFitButton.ButtonPushedFcn = app.createCallbackFcn(@reset_fit_button_pushed, true);
+            app.ResetFitButton.ButtonPushedFcn = app.createCallbackFcn(@controller.bgpcResetFitButtonPushed, true);
         end
         
         function createDoneButton(app, controller)
@@ -315,7 +313,7 @@ classdef BackgroundPhaseCorrectionView < matlab.apps.AppBase
             app.DoneButton.Layout.Row = 4;
             app.DoneButton.Layout.Column = 1;
             app.DoneButton.Text = 'Done';
-            app.DoneButton.ButtonPushedFcn = app.createCallbackFcn(@controller.bgpcImageValueChangedCallback, true);
+            app.DoneButton.ButtonPushedFcn = app.createCallbackFcn(@controller.bgpcDoneButtonPushed, true);
         end
 
     end

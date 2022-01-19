@@ -1,4 +1,17 @@
 classdef Controller < handle
+    %{
+    Following MVC design, this is the main class that coordinates the GUI,
+    underlying data, and business logic.
+    
+    Business logic methods are stored here.
+    Data is stored in Model.
+    UI components are in the Views. Data for images, etc. are stored in the
+    Model.
+    
+    Abbreviations/Acronyms
+        *bgpc = BackGround Phase Correction
+
+    %}
     
     properties (Access = public)
         View;
@@ -22,6 +35,24 @@ classdef Controller < handle
             delete(self.View.UIFigure);
             delete(self.View);
             delete(self.Model);
+        end
+        
+    end
+    
+    % callbacks for main figure window
+    methods (Access = public)
+        
+        function UIFigureCloseRequest(self, evt)
+            self.delete();
+        end
+        
+        function UIWindowKeyPressFcn(self, evt)
+            switch char(evt.Modifier)
+                case 'control'
+                    if strcmpi(evt.Key, 'w')
+                        self.delete();
+                    end
+            end
         end
         
     end
@@ -57,7 +88,6 @@ classdef Controller < handle
         end
         
         function testDbConnectionMenuButtonCallback(self, src, evt)
-            
         end
         
         function drawROIMenuButtonCallback(self, src, evt)
@@ -89,7 +119,6 @@ classdef Controller < handle
     % callbacks from BackgroundPhaseCorrectionView
     methods (Access = public)
         
-        % bgpc = BackGround Phase Correction
         function bgpcImageValueChangedCallback(self, src, evt)
             value = evt.Value;
             
@@ -128,6 +157,75 @@ classdef Controller < handle
 %             src.update_images();
         end
         
+        function bgpcCdThresholdValueChangedCallback(self, src, evt)
+            value = evt.Value;
+            
+            switch evt.Source.Type
+                case 'uislider'
+                    src.CDSlider.Value = value;
+                    value = floor(value) / 100;
+                    src.CDSpinner.Value = value;
+                case 'uispinner'
+                    src.CDSpinner.Value = value;
+                    value = round(value, 2) * 100;
+                    src.CDSlider.Value = value;
+                    value = value / 100;
+            end
+
+            self.Model.CDThreshold = value;
+%             src.update_images();
+        end
+        
+        function bgpcNoiseThresholdValueChangedCallback(self, src, evt)
+            value = evt.Value;
+            
+            switch evt.Source.Type
+                case 'uislider'
+                    src.NoiseThresholdSlider.Value = value;
+                    value = floor(value) / 100;
+                    src.NoiseThresholdSpinner.Value = value;
+                case 'uispinner'
+                    src.NoiseThresholdSpinner.Value = value;
+                    value = round(value, 2) * 100;
+                    src.NoiseThresholdSlider.Value = value;
+                    value = value / 100;
+            end
+
+            self.Model.VmaxNoiseThreshold = value;
+%             src.update_images();
+        end
+        
+        function bgpcFitOrderValueChangedCallback(self, src, evt)
+            value = floor(evt.Value);
+            self.Model.FitOrder = value;
+%             src.update_images();
+        end
+        
+        function bgpcApplyCorrectionValueChangedCallback(self, src, evt)
+            value = evt.Value;
+            self.Model.ApplyCorrection = value;
+        end
+        
+        function bgpcUpdateButtonPushed(self, src, evt)
+            mask = app.create_angiogram(app.CenterlineToolApp.VIPR.MAG);
+            app.poly_fit_3d(mask);
+            app.update_images();
+        end
+        
+        function bgpcResetFitButtonPushed(self, src, evt)
+            app.reset_fit();
+            app.update_images();
+        end
+        
+        function bgpcDoneButtonPushed(self, src, evt)
+            app.UIFigure.WindowState = "minimized";
+            waitfor(app.UIFigure, 'WindowState', 'minimized');
+            app.CenterlineToolApp.VIPR = app.poly_correction(app.CenterlineToolApp.VIPR);
+            app.CenterlineToolApp.VIPR.TimeMIP = CalculateAngiogram.calculate_angiogram(app.CenterlineToolApp.VIPR);
+            [~, app.CenterlineToolApp.VIPR.Segment] = CalculateSegment(app.CenterlineToolApp.VIPR);
+            app.save_();
+        end
+
     end
     
     % load data methods
@@ -141,8 +239,10 @@ classdef Controller < handle
     % bgpc methods
     methods (Access = private)
         
-        function bgpcMain(self)
-            
+        function bgpcUpdateImages(self)
+            [magSlice, velocitySlice] = app.get_slices(app.CenterlineToolApp.VIPR);
+            app.MagImage.CData = magSlice;
+            app.VelocityImage.CData = velocitySlice;
         end
         
     end
