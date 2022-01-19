@@ -52,45 +52,42 @@ classdef BackgroundPhaseCorrectionView < matlab.apps.AppBase
     methods (Access = private)
         % Create UIFigure and components
         function createComponents(app, controller)
-            app.init_parent_grid();
-            app.init_child_grid1();
-            app.init_child_grid2();
-            app.init_mag_axes(controller);
-            app.init_velocity_axes(controller);
-            app.init_image_label();
-            app.init_vmax_label();
-            app.init_cd_label();
-            app.init_noise_label();
-            app.init_fit_order_label();
+            app.createParentGrid();
+            app.createChildGrid1();
+            app.createChildGrid2();
+            app.createMagAxes(controller);
+            app.createVelocityAxes(controller);
+            app.createImageLabel();
+            app.createVmaxLabel();
+            app.createCdLabel();
+            app.createNoiseLabel();
+            app.createFitOrderLabel();
             
-            app.init_image_slider(controller);
-            app.init_vmax_slider(controller);
-            app.init_cd_slider(controller);
-            app.init_noise_slider(controller);
+            app.createImageSlider(controller);
+            app.createVmaxSlider(controller);
+            app.createCdSlider(controller);
+            app.createNoiseSlider(controller);
             
-            app.init_image_spinner(controller);
-            app.init_vmax_spinner(controller);
-            app.init_cd_spinner(controller);
-            app.init_noise_spinner(controller);
-            app.init_fit_order_spinner(controller);
+            app.createImageSpinner(controller);
+            app.createVmaxSpinner(controller);
+            app.createCdSpinner(controller);
+            app.createNoiseSpinner(controller);
+            app.createFitOrderSpinner(controller);
             
-            app.init_apply_correction_cb(controller);
-            app.init_update_button(controller);
-            app.init_reset_fit_button(controller);
-            app.init_done_button(controller);
-            
-            % Show the figure after all components are created
-            app.UIFigure.Visible = 'on';
+            app.createApplyCorrectionCheckbox(controller);
+            app.createUpdateButton(controller);
+            app.createResetFitButton(controller);
+            app.createDoneButton(controller);
         end
             
-        function init_parent_grid(app)
+        function createParentGrid(app)
             app.ParentGridLayout = uigridlayout(app.UIFigure);
             app.ParentGridLayout.ColumnWidth = {'2x', '1x'};
             app.ParentGridLayout.RowHeight = {'1x', '1x'};
         end
         
         % grid housing labels, sliders, and spinners
-        function init_child_grid1(app)
+        function createChildGrid1(app)
             app.ChildGridLayout1 = uigridlayout(app.ParentGridLayout);
             app.ChildGridLayout1.ColumnWidth = {'1x', '1x', '1x'};
             app.ChildGridLayout1.RowHeight = {'1x', '1x', '1x', '1x'};
@@ -99,7 +96,7 @@ classdef BackgroundPhaseCorrectionView < matlab.apps.AppBase
         end
 
         % grid housing buttons
-        function init_child_grid2(app)
+        function createChildGrid2(app)
             app.ChildGridLayout2 = uigridlayout(app.ParentGridLayout);
             app.ChildGridLayout2.ColumnWidth = {'1x'};
             app.ChildGridLayout2.RowHeight = {'1x', '1x', '1x', '1x'};
@@ -107,7 +104,7 @@ classdef BackgroundPhaseCorrectionView < matlab.apps.AppBase
             app.ChildGridLayout2.Layout.Column = 2;
         end
         
-        function init_mag_axes(app, controller)
+        function createMagAxes(app, controller)
             % Create mag axes
             app.MagAxes = uiaxes(app.ParentGridLayout);
             app.MagAxes.Layout.Row = 1;
@@ -129,7 +126,7 @@ classdef BackgroundPhaseCorrectionView < matlab.apps.AppBase
             controller.Model.MagImage = imagesc(app.MagAxes, 'CData', controller.Model.WhiteImage, [0 210]);
         end
         
-        function init_velocity_axes(app, controller)
+        function createVelocityAxes(app, controller)
             % Create velocity axes
             app.VelocityAxes = uiaxes(app.ParentGridLayout);
             app.VelocityAxes.Layout.Row = 2;
@@ -151,35 +148,35 @@ classdef BackgroundPhaseCorrectionView < matlab.apps.AppBase
             controller.Model.VelocityImage = imagesc(app.VelocityAxes, 'CData', controller.Model.WhiteImage, [0 210]);
         end
         
-        function init_image_label(app)
+        function createImageLabel(app)
             app.ImageLabel = uilabel(app.ChildGridLayout1);
             app.ImageLabel.Layout.Row = 1;
             app.ImageLabel.Layout.Column = 1;
             app.ImageLabel.Text = 'Image';
         end
         
-        function init_vmax_label(app)
+        function createVmaxLabel(app)
             app.VmaxLabel = uilabel(app.ChildGridLayout1);
             app.VmaxLabel.Layout.Row = 2;
             app.VmaxLabel.Layout.Column = 1;
             app.VmaxLabel.Text = 'Vmax';
         end
         
-        function init_cd_label(app)
+        function createCdLabel(app)
             app.CDLabel = uilabel(app.ChildGridLayout1);
             app.CDLabel.Layout.Row = 3;
             app.CDLabel.Layout.Column = 1;
             app.CDLabel.Text = 'CD Threshold';
         end
         
-        function init_noise_label(app)
+        function createNoiseLabel(app)
             app.NoiseLabel = uilabel(app.ChildGridLayout1);
             app.NoiseLabel.Layout.Row = 4;
             app.NoiseLabel.Layout.Column = 1;
             app.NoiseLabel.Text = 'Noise Threshold';
         end
         
-        function init_fit_order_label(app)
+        function createFitOrderLabel(app)
             app.FitOrderLabel = uilabel(app.ChildGridLayout1);
             app.FitOrderLabel.Layout.Row = 5;
             app.FitOrderLabel.Layout.Column = 1;
@@ -187,7 +184,7 @@ classdef BackgroundPhaseCorrectionView < matlab.apps.AppBase
         end
         
         
-        function init_image_slider(app, controller)
+        function createImageSlider(app, controller)
             app.ImageSlider = uislider(app.ChildGridLayout1);
             app.ImageSlider.Layout.Row = 1;
             app.ImageSlider.Layout.Column = 2;
@@ -200,7 +197,7 @@ classdef BackgroundPhaseCorrectionView < matlab.apps.AppBase
             app.ImageSlider.ValueChangingFcn = app.createCallbackFcn(@controller.test, true);
         end
         
-        function init_vmax_slider(app, controller)
+        function createVmaxSlider(app, controller)
             app.VmaxSlider = uislider(app.ChildGridLayout1);
             app.VmaxSlider.Layout.Row = 2;
             app.VmaxSlider.Layout.Column = 2;
@@ -213,7 +210,7 @@ classdef BackgroundPhaseCorrectionView < matlab.apps.AppBase
             app.VmaxSlider.ValueChangingFcn = app.createCallbackFcn(@vmax_value_changed, true);
         end
         
-        function init_cd_slider(app, controller)
+        function createCdSlider(app, controller)
             app.CDSlider = uislider(app.ChildGridLayout1);
             app.CDSlider.Layout.Row = 3;
             app.CDSlider.Layout.Column = 2;
@@ -226,7 +223,7 @@ classdef BackgroundPhaseCorrectionView < matlab.apps.AppBase
             app.CDSlider.ValueChangingFcn = app.createCallbackFcn(@cd_threshold_value_changed, true);
         end
         
-        function init_noise_slider(app, controller)
+        function createNoiseSlider(app, controller)
             app.NoiseSlider = uislider(app.ChildGridLayout1);
             app.NoiseSlider.MajorTicks = [0:20:100];
             app.NoiseSlider.MinorTicks = [5:5:100];
@@ -240,7 +237,7 @@ classdef BackgroundPhaseCorrectionView < matlab.apps.AppBase
         end
                 
         
-        function init_image_spinner(app, controller)
+        function createImageSpinner(app, controller)
             app.ImageSpinner = uispinner(app.ChildGridLayout1);
             app.ImageSpinner.Layout.Row = 1;
             app.ImageSpinner.Layout.Column = 3;
@@ -250,7 +247,7 @@ classdef BackgroundPhaseCorrectionView < matlab.apps.AppBase
             app.ImageSpinner.ValueChangedFcn = app.createCallbackFcn(@controller.test, true);
         end
         
-        function init_vmax_spinner(app, controller)
+        function createVmaxSpinner(app, controller)
             app.VmaxSpinner = uispinner(app.ChildGridLayout1);
             app.VmaxSpinner.Layout.Row = 2;
             app.VmaxSpinner.Layout.Column = 3;
@@ -260,7 +257,7 @@ classdef BackgroundPhaseCorrectionView < matlab.apps.AppBase
             app.VmaxSpinner.ValueChangedFcn = app.createCallbackFcn(@vmax_value_changed, true);
         end
         
-        function init_cd_spinner(app, controller)
+        function createCdSpinner(app, controller)
             app.CDSpinner = uispinner(app.ChildGridLayout1);
             app.CDSpinner.Layout.Row = 3;
             app.CDSpinner.Layout.Column = 3;
@@ -270,7 +267,7 @@ classdef BackgroundPhaseCorrectionView < matlab.apps.AppBase
             app.CDSpinner.ValueChangedFcn = app.createCallbackFcn(@cd_threshold_value_changed, true);
         end
         
-        function init_noise_spinner(app, controller)
+        function createNoiseSpinner(app, controller)
             app.NoiseSpinner = uispinner(app.ChildGridLayout1);
             app.NoiseSpinner.Layout.Row = 4;
             app.NoiseSpinner.Layout.Column = 3;
@@ -280,7 +277,7 @@ classdef BackgroundPhaseCorrectionView < matlab.apps.AppBase
             app.NoiseSpinner.ValueChangedFcn = app.createCallbackFcn(@noise_threshold_value_changed, true);
         end
         
-        function init_fit_order_spinner(app, controller)
+        function createFitOrderSpinner(app, controller)
             app.FitOrderSpinner = uispinner(app.ChildGridLayout1);
             app.FitOrderSpinner.Layout.Row = 5;
             app.FitOrderSpinner.Layout.Column = 3;
@@ -291,7 +288,7 @@ classdef BackgroundPhaseCorrectionView < matlab.apps.AppBase
         end
         
         
-        function init_apply_correction_cb(app, controller)
+        function createApplyCorrectionCheckbox(app, controller)
             app.ApplyCorrectionCheckbox = uicheckbox(app.ChildGridLayout2);
             app.ApplyCorrectionCheckbox.Layout.Row = 1;
             app.ApplyCorrectionCheckbox.Layout.Column = 1;
@@ -300,7 +297,7 @@ classdef BackgroundPhaseCorrectionView < matlab.apps.AppBase
             app.ApplyCorrectionCheckbox.ValueChangedFcn = app.createCallbackFcn(@apply_correction_value_changed, true);
         end
         
-        function init_update_button(app, controller)
+        function createUpdateButton(app, controller)
             app.UpdateButton = uibutton(app.ChildGridLayout2, 'push');
             app.UpdateButton.Layout.Row = 2;
             app.UpdateButton.Layout.Column = 1;
@@ -308,7 +305,7 @@ classdef BackgroundPhaseCorrectionView < matlab.apps.AppBase
             app.UpdateButton.ButtonPushedFcn = app.createCallbackFcn(@update_button_pushed, true);
         end
         
-        function init_reset_fit_button(app, controller)
+        function createResetFitButton(app, controller)
             app.ResetFitButton = uibutton(app.ChildGridLayout2, 'push');
             app.ResetFitButton.Layout.Row = 3;
             app.ResetFitButton.Layout.Column = 1;
@@ -316,7 +313,7 @@ classdef BackgroundPhaseCorrectionView < matlab.apps.AppBase
             app.ResetFitButton.ButtonPushedFcn = app.createCallbackFcn(@reset_fit_button_pushed, true);
         end
         
-        function init_done_button(app, controller)
+        function createDoneButton(app, controller)
             app.DoneButton = uibutton(app.ChildGridLayout2, 'push');
             app.DoneButton.Layout.Row = 4;
             app.DoneButton.Layout.Column = 1;
