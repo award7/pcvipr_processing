@@ -2,10 +2,10 @@ classdef View < matlab.apps.AppBase
     
     % common figure properties
     properties (Access = public)
-        UIFigure                    matlab.ui.Figure;
-        ParentGrid                  matlab.ui.container.GridLayout;
-        ChildGridLayout1            matlab.ui.container.GridLayout;
-        ChildGridLayout2            matlab.ui.container.GridLayout;
+        UIFigure        matlab.ui.Figure;
+        ParentGrid      matlab.ui.container.GridLayout;
+        ChildGrid1      matlab.ui.container.GridLayout;
+        ChildGrid2      matlab.ui.container.GridLayout;
     end
     
     % file menu bar properties
@@ -40,9 +40,7 @@ classdef View < matlab.apps.AppBase
         SetDataOutputPathMenuButton;
         SetDataOutputParametersMenuButton;
     end
-    
-   
-    
+
     % app creation
     methods (Access = public)
         
@@ -251,14 +249,12 @@ classdef View < matlab.apps.AppBase
         end
 
         function createChildGrid1Main(app)
-            app.ChildGridLayout1 = uigridlayout(app.ParentGrid);
-            app.ChildGridLayout1.ColumnWidth = {'1x'};
-            app.ChildGridLayout1.RowHeight = {'1x'};
+            app.ChildGrid1 = uigridlayout(app.ParentGrid);
+            app.ChildGrid1.ColumnWidth = {'1x'};
+            app.ChildGrid1.RowHeight = {'1x'};
         end
 
     end
-    
-    % bgpc view methods
     
     % vessel select view methods
     
