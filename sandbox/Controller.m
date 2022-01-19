@@ -13,7 +13,7 @@ classdef Controller < handle
         
         function self = Controller()
             clc;
-            self.View = View(self);
+            self.View = BaseView(self);
             self.Model = Model();
             self.State = AppState.Main;
         end

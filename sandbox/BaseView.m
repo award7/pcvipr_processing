@@ -1,4 +1,4 @@
-classdef View < matlab.apps.AppBase
+classdef BaseView < matlab.apps.AppBase
     
     % common figure properties
     properties (Access = public)
@@ -11,7 +11,6 @@ classdef View < matlab.apps.AppBase
     % file menu bar properties
     properties (Access = public)
         FileMenu;
-        
         LoadDataMenuButton;
         ExitMenuButton;
     end
@@ -19,7 +18,6 @@ classdef View < matlab.apps.AppBase
     % analysis menu bar properties
     properties (Access = public)
         AnalysisMenu;
-        
         ViewFullVasculatureMenuButton;
         BackgroundPhaseCorrectionMenuButton;
         DrawROIMenuButton;
@@ -34,7 +32,6 @@ classdef View < matlab.apps.AppBase
     % data source menu bar properties
     properties (Access = public)
         DataSourceMenu;
-        
         ConnectToDbMenuButton;
         TestDbConnectionMenuButton;
         SetDataOutputPathMenuButton;
@@ -46,41 +43,12 @@ classdef View < matlab.apps.AppBase
         
         function app = View(controller)
             app.createBaseFigure(controller);
-            app.createView('main', controller);
-            
+            app.createBaseFigure(controller);
             app.registerApp(app.UIFigure);
             
             if nargout == 0
                 clear app
             end
-        end
-        
-    end
-    
-    % create different views
-    methods (Access = public)
-        
-        % create the specified view passed by 'view'
-        function createView(app, view, controller)
-            arguments
-                app;
-                view {mustBeMember(view, {'main', 'bgpc', 'vessel_select', 'vessel_3d', 'parameter_plot'})};
-                controller;
-            end
-            
-            switch view
-                case 'main'
-                    app.createMainView();
-                case 'bgpc'
-                    app.createBgpcView();
-                case 'vessel_select'
-                    app.createVesselSelectView();
-                case 'vessel_3d'
-                    app.createVessel3dView();
-                case 'parameter_plot'
-                    app.createParameterPlotView();
-            end
-            
         end
         
     end
@@ -225,43 +193,8 @@ classdef View < matlab.apps.AppBase
             app.SetDataOutputPathMenuButton.MenuSelectedFcn = createCallbackFcn(app, @controller.setDataOutputPathMenuButtonCallback, true);
         end
 
-        
     end
-    
-    % main view methods
-    methods (Access = private)
-        
-        function createMainView(app)
-            app.createParentGridMain();
-            app.createChildGrid1Main();
-        end
-        
-        function createParentGridMain(app)
-            if isobject(app.ParentGrid)
-                if isvalid(app.ParentGrid)
-                    app.ParentGrid.delete();
-                end
-            end
-            
-            app.ParentGrid = uigridlayout(app.UIFigure);
-            app.ParentGrid.ColumnWidth = {'1x'};
-            app.ParentGrid.RowHeight = {'1x'};
-        end
 
-        function createChildGrid1Main(app)
-            app.ChildGrid1 = uigridlayout(app.ParentGrid);
-            app.ChildGrid1.ColumnWidth = {'1x'};
-            app.ChildGrid1.RowHeight = {'1x'};
-        end
-
-    end
-    
-    % vessel select view methods
-    
-    % vessel3D view methods
-    
-    % parameter plot view methods
-    
     % enable buttons methods
     methods (Access = public)
         
