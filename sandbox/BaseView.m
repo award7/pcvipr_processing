@@ -1,41 +1,44 @@
 classdef BaseView < matlab.apps.AppBase
+    %{
+        This class creates the initial figure.
+        Any other views are built into a single ParentGrid property and
+        then assigned to the UIFigure.
+    %}
     
-    % common figure properties
+    % base figure properties
     properties (Access = public)
         UIFigure        matlab.ui.Figure;
         ParentGrid      matlab.ui.container.GridLayout;
-        ChildGrid1      matlab.ui.container.GridLayout;
-        ChildGrid2      matlab.ui.container.GridLayout;
     end
     
     % file menu bar properties
     properties (Access = public)
-        FileMenu;
-        LoadDataMenuButton;
-        ExitMenuButton;
+        FileMenu            matlab.ui.container.Menu;
+        LoadDataMenuButton  matlab.ui.container.Menu;
+        ExitMenuButton      matlab.ui.container.Menu;
     end
     
     % analysis menu bar properties
     properties (Access = public)
-        AnalysisMenu;
-        ViewFullVasculatureMenuButton;
-        BackgroundPhaseCorrectionMenuButton;
-        DrawROIMenuButton;
-        ViewParametricMapMenuButton;
-        FeatureExtractionMenuButton;
-        VesselSelectionMenuButton;
-        SegmentVesselsMenuButton;
-        Vessel3dMenuButton;
-        ParameterPlotMenuButton;
+        AnalysisMenu                            matlab.ui.container.Menu;
+        ViewFullVasculatureMenuButton           matlab.ui.container.Menu;
+        BackgroundPhaseCorrectionMenuButton     matlab.ui.container.Menu;
+        DrawROIMenuButton                       matlab.ui.container.Menu;
+        ViewParametricMapMenuButton             matlab.ui.container.Menu;
+        FeatureExtractionMenuButton             matlab.ui.container.Menu;
+        VesselSelectionMenuButton               matlab.ui.container.Menu;
+        SegmentVesselsMenuButton                matlab.ui.container.Menu;
+        Vessel3dMenuButton                      matlab.ui.container.Menu;
+        ParameterPlotMenuButton                 matlab.ui.container.Menu;
     end
     
     % data source menu bar properties
     properties (Access = public)
-        DataSourceMenu;
-        ConnectToDbMenuButton;
-        TestDbConnectionMenuButton;
-        SetDataOutputPathMenuButton;
-        SetDataOutputParametersMenuButton;
+        DataSourceMenu                      matlab.ui.container.Menu;
+        ConnectToDbMenuButton               matlab.ui.container.Menu;
+        TestDbConnectionMenuButton          matlab.ui.container.Menu;
+        SetDataOutputPathMenuButton         matlab.ui.container.Menu;
+        SetDataOutputParametersMenuButton   matlab.ui.container.Menu;
     end
 
     % app creation
@@ -57,7 +60,7 @@ classdef BaseView < matlab.apps.AppBase
         
         % create figure
         function createBaseFigure(app, controller)
-            app.createFigure();
+            app.createFigure(controller);
             
             % file menu
             app.createFileMenu();
@@ -82,7 +85,7 @@ classdef BaseView < matlab.apps.AppBase
             app.createSetDataOutputPathMenuButton(controller);
         end
         
-        function createFigure(app)
+        function createFigure(app, controller)
             % todo: add title, size, position
             app.UIFigure = uifigure();
             app.UIFigure.CloseRequestFcn = app.createCallbackFcn(@controller.UIFigureCloseRequest, true);
