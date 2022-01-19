@@ -24,7 +24,7 @@ classdef Controller < handle
         Model;
     end
     
-    properties (Access = public)
+    properties (Access = private)
         State   AppState;
     end
     
@@ -48,11 +48,11 @@ classdef Controller < handle
     % callbacks for main figure window
     methods (Access = public)
         
-        function UIFigureCloseRequest(self, evt)
+        function UIFigureCloseRequest(self, src, evt)
             self.delete();
         end
         
-        function UIWindowKeyPressFcn(self, evt)
+        function UIWindowKeyPressFcn(self, src, evt)
             switch char(evt.Modifier)
                 case 'control'
                     if strcmpi(evt.Key, 'w')
@@ -119,6 +119,12 @@ classdef Controller < handle
         end
         
         function vesselSelectionMenuButtonCallback(self, src, evt)
+            if strcmp(self.State, 'VesselSelect')
+                return;
+            end
+            
+            VesselSelectionView(self);
+            self.State = AppState.VesselSelect;
         end
         
         function segmentVesselsMenuButtonCallback(self, src, evt)
@@ -245,7 +251,28 @@ classdef Controller < handle
         end
 
     end
-       
+    
+    % callbacks from VesselSelectionView
+    methods (Access = public)
+        
+        function vsContextMenuOptionSelected(self, src, evt)
+            disp(evt);
+        end
+        
+        function vsDoneButtonPushed(self, src, evt)
+            disp(evt);
+        end
+        
+        function vsVesselTableCellSelection(self, src, evt)
+            disp(evt);
+        end
+        
+        function vsToolbarValueChanged(self, src, evt)
+            disp(evt);
+        end
+        
+    end
+    
     % bgpc methods
     methods (Access = private)
         
