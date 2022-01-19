@@ -107,9 +107,9 @@ classdef VesselSelectionView < matlab.apps.AppBase
             
             % toolbars
             % todo: the toolbars don't seem to be assigned to the axes
-            app.createSagittalToolbar();
-            app.createCoronalToolbar();
-            app.createAxialToolbar();
+            app.createSagittalToolbar(controller);
+            app.createCoronalToolbar(controller);
+            app.createAxialToolbar(controller);
             
             % context menu and buttons
             app.createContextMenu();
@@ -236,7 +236,7 @@ classdef VesselSelectionView < matlab.apps.AppBase
         end
         
         % create custom toolbars
-        function createSagittalToolbar(app)
+        function createSagittalToolbar(app, controller)
             app.SagittalAxesToolbar = axtoolbar(app.SagittalAxes, {'zoomin', 'zoomout', 'export', 'datacursor'});
             app.SagittalAxesToolbar.Tag = 'sagittal_tb';
             sagittal_btn = axtoolbarbtn(app.SagittalAxesToolbar, 'push');
@@ -244,7 +244,7 @@ classdef VesselSelectionView < matlab.apps.AppBase
             sagittal_btn.ButtonPushedFcn = createCallbackFcn(app, @controller.vsToolbarValueChanged, true);
         end
         
-        function createCoronalToolbar(app)
+        function createCoronalToolbar(app, controller)
             app.CoronalAxesToolbar = axtoolbar(app.CoronalAxes, {'zoomin', 'zoomout', 'export', 'datacursor'});
             app.CoronalAxesToolbar.Tag = 'coronal_tb';
             coronal_btn = axtoolbarbtn(app.CoronalAxesToolbar, 'push');
@@ -252,7 +252,7 @@ classdef VesselSelectionView < matlab.apps.AppBase
             coronal_btn.ButtonPushedFcn = createCallbackFcn(app, @controller.vsToolbarValueChanged, true);
         end
         
-        function createAxialToolbar(app)
+        function createAxialToolbar(app, controller)
             app.AxialAxesToolbar = axtoolbar(app.AxialAxes, {'zoomin', 'zoomout', 'export', 'datacursor'});
             app.AxialAxesToolbar.Tag = 'axial_tb';
             axial_btn = axtoolbarbtn(app.AxialAxesToolbar, 'push');
