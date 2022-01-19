@@ -16,6 +16,9 @@ classdef Controller < handle
     
     Abbreviations/Acronyms
         *bgpc = BackGround Phase Correction
+        *vs = Vessel Selection
+        *vs3d = Vessel 3D
+        *pp = Parameter Plot
 
     %}
     
@@ -34,7 +37,7 @@ classdef Controller < handle
             clc;
             self.View = BaseView(self);
             self.Model = Model();
-            self.State = AppState.Main;
+            self.State = AppState.FullVasculature;
         end
         
         function delete(self)
@@ -201,29 +204,29 @@ classdef Controller < handle
                             'Pause', 'on', ...
                             'Duration', 5);
             % create view
-            % TODO: call view
+            Vessel3DView(self);
             
             % change app state
             self.State = AppState.Vessel3D;
         end
         
         function parameterPlotMenuButtonCallback(self, src, evt)
-            % display full vasculature
+            % display parameter plots
             % don't reload if it's currently in this state
             if strcmp(self.State, 'ParameterPlot')
                 return;
             end
             
             % create progress bar for enhancing UX
-            msg = 'Building Full Vascular Angiogram';
+            msg = 'Plotting Vessel Parameters';
             ProgressBarView(self.View.UIFigure, ...
                             'Message', msg, ...
                             'Indeterminate', 'on', ...
                             'Cancelable', 'on', ...
                             'Pause', 'on', ...
-                            'Duration', 5);
+                            'Duration', 10);
             % create view
-            % TODO: call view
+            ParameterPlotView(self);
             
             % change app state
             self.State = AppState.ParameterPlot;
@@ -361,6 +364,57 @@ classdef Controller < handle
         end
         
         function vsToolbarValueChanged(self, src, evt)
+            disp(evt);
+        end
+        
+    end
+    
+    % callbacks from Vessel3DView
+    methods (Access = public)
+        
+        function vs3dToolbarValueChangedCallback(self, src, evt)
+            disp(evt);
+        end
+        
+        function vs3dVesselDropdownValueChanged(self, src, evt)
+            disp(evt);
+        end
+        
+        function vs3dIsolateButtonValueChanged(self, src, evt)
+            disp(evt);
+        end
+        
+        function vs3dLowerVoxelValueChanged(self, src, evt)
+            disp(evt);
+        end
+        
+        function vs3dWindowValueChanged(self, src, evt)
+            disp(evt);
+        end
+        
+        
+    end
+    
+    % callbacks from ParameterPlotView
+    methods (Access = public)
+        
+        function ppLowerVoxelSpinnerValueChanged(self, src, evt)
+            disp(evt);
+        end
+        
+        function ppWindowSpinnerValueChanged(self, src, evt)
+            disp(evt);
+        end
+        
+        function ppSaveButtonPushed(self, src, evt)
+            disp(evt);
+        end
+        
+        function ppSpinnerSaveDataStartValueChanged(self, src, evt)
+            disp(evt);
+        end
+        
+        function ppSpinnerSaveDataEndValueChanged(self, src, evt)
             disp(evt);
         end
         
