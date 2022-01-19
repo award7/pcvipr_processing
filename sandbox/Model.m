@@ -5,6 +5,12 @@ classdef Model < handle
         VelocityDS;
         VelocityMeanDS;
         MagDS;
+        DataDirectory;
+        FOV;
+        NoFrames;
+        Resolution;
+        TimeResolution;
+        VelocityEncoding;
     end
     
     % only load these when needed
