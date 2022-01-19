@@ -8,7 +8,6 @@ classdef BaseView < matlab.apps.AppBase
     % base figure properties
     properties (Access = public)
         UIFigure        matlab.ui.Figure;
-        
     end
     
     % base grid properties
@@ -206,6 +205,16 @@ classdef BaseView < matlab.apps.AppBase
 
     % enable buttons methods
     methods (Access = public)
+        
+        function setButtonState(app, button, state)
+            arguments
+                app;
+                button {mustBeTextScalar};
+                state {mustBeUnderlyingType(state, 'ButtonState')};
+            end
+            
+            app.(button).Enable = char(state);
+        end
         
         function enableLoadDataMenuButton(app)
             app.LoadDataMenuButton.Enable = 'on';
