@@ -5,6 +5,9 @@ classdef Model < handle
         VelocityDS;
         VelocityMeanDS;
         MagDS;
+        VelocityFS;
+        VelocityMeanFS;
+        MagFS;
         DataDirectory;
         FOV;
         NoFrames;

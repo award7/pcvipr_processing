@@ -43,7 +43,6 @@ classdef BaseView < matlab.apps.AppBase
         
         function app = BaseView(controller)
             app.createBaseFigure(controller);
-            app.createBaseFigure(controller);
             app.registerApp(app.UIFigure);
             
             if nargout == 0
