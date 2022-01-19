@@ -18,7 +18,6 @@ classdef BaseView < matlab.apps.AppBase
     % file menu bar properties
     properties (Access = private)
         FileMenu            matlab.ui.container.Menu;
-        LoadDataMenuButton  matlab.ui.container.Menu;
         ExitMenuButton      matlab.ui.container.Menu;
     end
     
@@ -38,6 +37,7 @@ classdef BaseView < matlab.apps.AppBase
     
     % data source menu bar properties
     properties (Access = private)
+        LoadDataMenuButton                  matlab.ui.container.Menu;
         DataSourceMenu                      matlab.ui.container.Menu;
         ConnectToDbMenuButton               matlab.ui.container.Menu;
         TestDbConnectionMenuButton          matlab.ui.container.Menu;
@@ -68,7 +68,6 @@ classdef BaseView < matlab.apps.AppBase
             
             % file menu
             app.createFileMenu();
-            app.createLoadDataMenuButton(controller);
             app.createExitMenuButton(controller);
             
             % analysis menu
@@ -84,14 +83,23 @@ classdef BaseView < matlab.apps.AppBase
 
             % data source menu
             app.createDataSourceMenu();
+            app.createLoadDataMenuButton(controller);
             app.createConnectToDbMenuButton(controller);
             app.createTestDbConnectionMenuButton(controller);
+            app.createSetDataOutputParametersMenuButton(controller);
             app.createSetDataOutputPathMenuButton(controller);
+            
+            % make figure visible after object creation
+            app.UIFigure.Visible = 'on';
         end
         
         function createFigure(app, controller)
             % todo: add title, size, position
-            app.UIFigure = uifigure();
+            app.UIFigure = uifigure('Name', 'PC VIPR Processing', ...
+                                    'Units', 'Normalized', ...
+                                    'Position', [1/4 1/4 1/2 1/2], ...
+                                    'Visible', 'off', ...
+                                    'Icon', 'vipr.png');
             app.UIFigure.CloseRequestFcn = app.createCallbackFcn(@controller.UIFigureCloseRequest, true);
             app.UIFigure.WindowKeyPressFcn = app.createCallbackFcn(@controller.UIWindowKeyPressFcn, true);
         end
@@ -100,12 +108,6 @@ classdef BaseView < matlab.apps.AppBase
         function createFileMenu(app)
             app.FileMenu = uimenu(app.UIFigure);
             app.FileMenu.Text = '&File';
-        end
-        
-        function createLoadDataMenuButton(app, controller)
-            app.LoadDataMenuButton = uimenu(app.FileMenu);
-            app.LoadDataMenuButton.Text = '&Load Data';
-            app.LoadDataMenuButton.MenuSelectedFcn = createCallbackFcn(app, @controller.loadDataMenuButtonCallback, true);
         end
         
         function createExitMenuButton(app, controller)
@@ -175,12 +177,12 @@ classdef BaseView < matlab.apps.AppBase
             app.DataSourceMenu.Text = '&Data Source';
         end
         
-        function createSetDataOutputParametersMenuButton(app, controller)
-            app.SetDataOutputParametersMenuButton = uimenu(app.DataSourceMenu);
-            app.SetDataOutputParametersMenuButton.Text = 'Set Data Output Parameters';
-            app.SetDataOutputParametersMenuButton.MenuSelectedFcn = createCallbackFcn(app, @controller.setDataOutputParametersMenuCallback, true);
+        function createLoadDataMenuButton(app, controller)
+            app.LoadDataMenuButton = uimenu(app.DataSourceMenu);
+            app.LoadDataMenuButton.Text = '&Load Data';
+            app.LoadDataMenuButton.MenuSelectedFcn = createCallbackFcn(app, @controller.loadDataMenuButtonCallback, true);
         end
-        
+
         function createConnectToDbMenuButton(app, controller)
             app.ConnectToDbMenuButton = uimenu(app.DataSourceMenu);
             app.ConnectToDbMenuButton.Text = 'Connect to &Database';
@@ -194,10 +196,16 @@ classdef BaseView < matlab.apps.AppBase
             app.TestDbConnectionMenuButton.MenuSelectedFcn = createCallbackFcn(app, @controller.testDbConnectionMenuButtonCallback, true);
         end
         
+        function createSetDataOutputParametersMenuButton(app, controller)
+            app.SetDataOutputParametersMenuButton = uimenu(app.DataSourceMenu);
+            app.SetDataOutputParametersMenuButton.Text = 'Set Data Output Parameters';
+            app.SetDataOutputParametersMenuButton.Separator = 'on';
+            app.SetDataOutputParametersMenuButton.MenuSelectedFcn = createCallbackFcn(app, @controller.setDataOutputParametersMenuCallback, true);
+        end
+        
         function createSetDataOutputPathMenuButton(app, controller)
             app.SetDataOutputPathMenuButton = uimenu(app.DataSourceMenu);
             app.SetDataOutputPathMenuButton.Text = 'Set Data Output Path';
-            app.SetDataOutputPathMenuButton.Separator = 'on';
             app.SetDataOutputPathMenuButton.MenuSelectedFcn = createCallbackFcn(app, @controller.setDataOutputPathMenuButtonCallback, true);
         end
 
