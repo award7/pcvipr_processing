@@ -81,7 +81,7 @@ classdef Controller < handle
         end
         
         function loadDataMenuButtonCallback(self, src, evt)
-            if isfolder(self.Model.DataDirectory)
+            if ~isnumeric(self.Model.DataDirectory) && isfolder(self.Model.DataDirectory)
                 data_directory = uigetdir(self.Model.DataDirectory);
             else
                 data_directory = uigetdir(pwd);
