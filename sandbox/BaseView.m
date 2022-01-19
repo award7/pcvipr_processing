@@ -203,7 +203,7 @@ classdef BaseView < matlab.apps.AppBase
 
     end
 
-    % enable buttons methods
+    % change button state methods
     methods (Access = public)
         
         function setButtonState(app, button, state)
@@ -216,131 +216,6 @@ classdef BaseView < matlab.apps.AppBase
             app.(button).Enable = char(state);
         end
         
-        function enableLoadDataMenuButton(app)
-            app.LoadDataMenuButton.Enable = 'on';
-        end
-        
-        function enableExitMenuButton(app)
-            app.ExitMenuButton.Enable = 'on';
-        end
-        
-        function enableShowFullVasculatureMenuButton(app)
-            app.ShowFullVasculatureMenuButton.Enable = 'on';
-        end
-        
-        function enableBackgroundPhaseCorrectionMenuButton(app)
-            app.BackgroundPhaseCorrectionMenuButton.Enable = 'on';
-        end
-        
-        function enableDrawROIMenuButton(app)
-            app.DrawROIMenuButton.Enable = 'on';
-        end
-        
-        function enableViewParametricMapMenuButton(app)
-            app.ViewParametricMapMenuButton.Enable = 'on';
-        end
-        
-        function enableFeatureExtractionMenuButton(app)
-            app.FeatureExtractionMenuButton.Enable = 'on';
-        end
-        
-        function enableVesselSelectionMenuButton(app)
-            app.VesselSelectionMenuButton.Enable = 'on';
-        end
-        
-        function enableSegmentVesselsMenuButton(app)
-            app.SegmentVesselsMenuButton.Enable = 'on';
-        end
-        
-        function enableVessel3dMenuButton(app)
-            app.Vessel3dMenuButton.Enable = 'on';
-        end
-        
-        function enableParameterPlotMenuButton(app)
-            app.ParameterPlotMenuButton.Enable = 'on';
-        end
-        
-        function enableConnectToDbMenuButton(app)
-            app.ConnectToDbMenuButton.Enable = 'on';
-        end
-        
-        function enableTestDbConnectionMenuButton(app)
-            app.TestDbConnectionMenuButton.Enable = 'on';
-        end
-        
-        function enableSetDataOutputPathMenuButton(app)
-            app.SetDataOutputPathMenuButton.Enable = 'on';
-        end
-        
-        function enableSetDataOutputParametersMenuButton(app)
-            app.SetDataOutputParametersMenuButton.Enable = 'on';
-        end
-
-    end
-    
-    % disable buttons methods
-    methods (Access = public)
-        
-        function disableLoadDataMenuButton(app)
-            app.LoadDataMenuButton.Enable = 'off';
-        end
-        
-        function disableExitMenuButton(app)
-            app.ExitMenuButton.Enable = 'on';
-        end
-        
-        function disableShowFullVasculatureMenuButton(app)
-            app.ShowFullVasculatureMenuButton.Enable = 'on';
-        end
-        
-        function disableBackgroundPhaseCorrectionMenuButton(app)
-            app.BackgroundPhaseCorrectionMenuButton.Enable = 'on';
-        end
-        
-        function disableDrawROIMenuButton(app)
-            app.DrawROIMenuButton.Enable = 'on';
-        end
-        
-        function disableViewParametricMapMenuButton(app)
-            app.ViewParametricMapMenuButton.Enable = 'on';
-        end
-        
-        function disableFeatureExtractionMenuButton(app)
-            app.FeatureExtractionMenuButton.Enable = 'on';
-        end
-        
-        function disableVesselSelectionMenuButton(app)
-            app.VesselSelectionMenuButton.Enable = 'on';
-        end
-        
-        function disableSegmentVesselsMenuButton(app)
-            app.SegmentVesselsMenuButton.Enable = 'on';
-        end
-        
-        function disableVessel3dMenuButton(app)
-            app.Vessel3dMenuButton.Enable = 'on';
-        end
-        
-        function disableParameterPlotMenuButton(app)
-            app.ParameterPlotMenuButton.Enable = 'on';
-        end
-        
-        function disableConnectToDbMenuButton(app)
-            app.ConnectToDbMenuButton.Enable = 'on';
-        end
-        
-        function disableTestDbConnectionMenuButton(app)
-            app.TestDbConnectionMenuButton.Enable = 'on';
-        end
-        
-        function disableSetDataOutputPathMenuButton(app)
-            app.SetDataOutputPathMenuButton.Enable = 'on';
-        end
-        
-        function disableSetDataOutputParametersMenuButton(app)
-            app.SetDataOutputParametersMenuButton.Enable = 'on';
-        end
-        
-    end
+    end 
     
 end
