@@ -3,17 +3,6 @@ classdef LoadViprDS
     % create file datastores
     methods (Static)
         
-        function fs = getVelocityMeanFileDataStore(data_directory)
-            arguments
-                data_directory {mustBeFolder};
-            end
-            
-            search_term = 'comp_vd*.dat';
-            num_files = 3;
-            
-            fs = LoadViprDS.getFileDatastore(data_directory, 'SearchTerm', search_term, 'ExpectedNumFiles', num_files);
-        end
-        
         function fs = getVelocityFileDataStore(data_directory)
             arguments
                 data_directory {mustBeFolder};
@@ -28,7 +17,18 @@ classdef LoadViprDS
             fs = LoadViprDS.getFileDatastore(data_directory, 'SearchTerm', search_term, 'ExpectedNumFiles', num_files);
         end
         
-        function fs = getMagDataStore(data_directory)
+        function fs = getVelocityMeanFileDataStore(data_directory)
+            arguments
+                data_directory {mustBeFolder};
+            end
+            
+            search_term = 'comp_vd*.dat';
+            num_files = 3;
+            
+            fs = LoadViprDS.getFileDatastore(data_directory, 'SearchTerm', search_term, 'ExpectedNumFiles', num_files);
+        end
+
+        function fs = getMagFileDataStore(data_directory)
             arguments
                 data_directory {mustBeFolder};
             end
@@ -68,18 +68,7 @@ classdef LoadViprDS
             % frame
             ds = arrayDatastore(data, 'IterationDimension', 5, 'ReadSize', 3);
         end
-        
-        function ds = loadMagData(fs, resolution)
-            arguments
-                fs {mustBeUnderlyingType(fs, 'matlab.io.datastore.FileDatastore')};
-                resolution {mustBeInteger, mustBePositive};
-            end
 
-            data = LoadViprDS.readDat(fs, resolution);
-            data = single(data);
-            ds = arrayDatastore(data, 'IterationDimension', 3, 'ReadSize', 1);
-        end
-        
         function ds = loadVelocityMeanData(fs, resolution)
             arguments
                 fs {mustBeUnderlyingType(fs, 'matlab.io.datastore.FileDatastore')};
@@ -95,6 +84,17 @@ classdef LoadViprDS
             % make IterationDimension = to the direction dimension
             % make ReadSize so it reads only one direction
             ds = arrayDatastore(data, 'IterationDimension', 4, 'ReadSize', 1);
+        end
+        
+        function ds = loadMagData(fs, resolution)
+            arguments
+                fs {mustBeUnderlyingType(fs, 'matlab.io.datastore.FileDatastore')};
+                resolution {mustBeInteger, mustBePositive};
+            end
+
+            data = LoadViprDS.readDat(fs, resolution);
+            data = single(data);
+            ds = arrayDatastore(data, 'IterationDimension', 3, 'ReadSize', 1);
         end
         
     end
@@ -152,6 +152,53 @@ classdef LoadViprDS
                 data(:,:,:,i) = reshape(raw_data, 320, 320, 320);
                 i = i + 1;
             end
+        end
+        
+    end
+    
+    % methods to read header info
+    methods (Static)
+    
+        function [no_frames, time_resolution, fov, resolution, velocity_encoding] = parseArray(data_directory)
+            % Read columns of data as strings:
+            % For more information, see the TEXTSCAN documentation.
+            
+            arguments
+                data_directory {mustBeFolder};
+            end
+            
+            delimiter = ' ';
+            formatSpec = '%s%s%[^\n\r]';
+            fid = fopen([data_directory '\pcvipr_header.txt'], 'r'); 
+            if fid < 0
+                error('Could not open pcvipr_header.txt file');
+            end
+            
+            dataArray = textscan(fid, formatSpec, 'Delimiter', delimiter, 'MultipleDelimsAsOne', true,  'ReturnOnError', false);
+            fclose(fid);
+            
+            dataArray{1,2} = cellfun(@str2num, dataArray{1,2}(:), 'UniformOutput', 0);
+            header = cell2struct(dataArray{1,2}(:), dataArray{1,1}(:), 1);
+            headerFields = fieldnames(header);
+            for k = 1:length(headerFields)
+                % todo: change to output to dialog
+                disp(strcat(headerFields{k}, {': '}, string(header.(headerFields{k}))));
+            end
+
+            % number of reconstructed frames
+            no_frames = header.frames;                                             
+            
+            % temporal Resolutionolution
+            time_resolution = header.timeres;
+            
+            % field of view in cm
+            fov = (header.fovx)/10;                                              
+            
+            % number of pixels in row,col,slices
+            resolution = header.matrixx;                                                
+            
+            % Velocity encoding
+            velocity_encoding = header.VENC;
         end
         
     end
