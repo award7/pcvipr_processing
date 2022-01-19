@@ -1,6 +1,6 @@
 classdef AppState
     enumeration
-        Main;
+        FullVasculature;
         BackgroundPhaseCorrection;
         ROI;
         ParametricMap;
