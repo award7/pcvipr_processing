@@ -72,12 +72,25 @@ classdef Controller < handle
             if strcmp(self.State, 'BackgroundPhaseCorrection')
                 return;
             end
+            
+            % create progress bar for enhancing UX
+            msg = 'Preparing Background Phase Correction';
+            ProgressBarView(self.View.UIFigure, ...
+                            'Message', msg, ...
+                            'Indeterminate', 'on', ...
+                            'Cancelable', 'on', ...
+                            'Pause', 'on', ...
+                            'Duration', 5);
+            % create view
             BackgroundPhaseCorrectionView(self);
+            
+            % change app state
             self.State = AppState.BackgroundPhaseCorrection;
         end
         
         function connectToDbMenuButtonCallback(self, src, evt)
             % todo: create inputdlg for db parameters
+            self.View.setButtonState('LoadDataMenuButton', ButtonState.on);
         end
         
         function loadDataMenuButtonCallback(self, src, evt)
@@ -90,8 +103,16 @@ classdef Controller < handle
             if data_directory == 0
                 return;
             end
-            self.Model.DataDirectory = data_directory;
             
+            % create progress bar for enhancing UX
+            msg = 'Loading VIPR Files';
+            ProgressBarView(self.View.UIFigure, ...
+                            'Message', msg, ...
+                            'Indeterminate', 'on', ...
+                            'Cancelable', 'on');
+            
+            % load VIPR files into file datastores
+            self.Model.DataDirectory = data_directory;
             self.Model.VelocityFS = LoadViprDS.getVelocityFileDataStore(self.Model.DataDirectory);
             self.Model.VelocityMeanFS = LoadViprDS.getVelocityMeanFileDataStore(self.Model.DataDirectory);
             self.Model.MagDS = LoadViprDS.getMagFileDataStore(self.Model.DataDirectory);
@@ -110,12 +131,33 @@ classdef Controller < handle
         end
         
         function drawROIMenuButtonCallback(self, src, evt)
+            % todo: show error dialog 'Not Implemented'
         end
         
         function viewFullVasculatureMenuButtonCallback(self, src, evt)
+            % display full vasculature
+            % don't reload if it's currently in this state
+            if strcmp(self.State, 'FullVasculature')
+                return;
+            end
+            
+            % create progress bar for enhancing UX
+            msg = 'Building Full Vascular Angiogram';
+            ProgressBarView(self.View.UIFigure, ...
+                            'Message', msg, ...
+                            'Indeterminate', 'on', ...
+                            'Cancelable', 'on', ...
+                            'Pause', 'on', ...
+                            'Duration', 5);
+            % create view
+            % TODO: call view
+            
+            % change app state
+            self.State = AppState.FullVasculature;
         end
         
         function viewParametricMapMenuButtonCallback(self, src, evt)
+            % todo: show error dialog 'Not Implemented'
         end
         
         function vesselSelectionMenuButtonCallback(self, src, evt)
@@ -123,17 +165,68 @@ classdef Controller < handle
                 return;
             end
             
+            % create progress bar for enhancing UX
+            msg = 'Rendering MR Images for Vessel Selection';
+            ProgressBarView(self.View.UIFigure, ...
+                            'Message', msg, ...
+                            'Indeterminate', 'on', ...
+                            'Cancelable', 'on', ...
+                            'Pause', 'on', ...
+                            'Duration', 5);
+            
+            % create view
             VesselSelectionView(self);
+            
+            % change app state
             self.State = AppState.VesselSelect;
         end
         
         function segmentVesselsMenuButtonCallback(self, src, evt)
+            
         end
         
         function vessel3dMenuButtonCallback(self, src, evt)
+            % display segmented vasculature
+            % don't reload if it's currently in this state
+            if strcmp(self.State, 'Vessel3D')
+                return;
+            end
+            
+            % create progress bar for enhancing UX
+            msg = 'Rendering Selected Vessels in 3D';
+            ProgressBarView(self.View.UIFigure, ...
+                            'Message', msg, ...
+                            'Indeterminate', 'on', ...
+                            'Cancelable', 'on', ...
+                            'Pause', 'on', ...
+                            'Duration', 5);
+            % create view
+            % TODO: call view
+            
+            % change app state
+            self.State = AppState.Vessel3D;
         end
         
         function parameterPlotMenuButtonCallback(self, src, evt)
+            % display full vasculature
+            % don't reload if it's currently in this state
+            if strcmp(self.State, 'ParameterPlot')
+                return;
+            end
+            
+            % create progress bar for enhancing UX
+            msg = 'Building Full Vascular Angiogram';
+            ProgressBarView(self.View.UIFigure, ...
+                            'Message', msg, ...
+                            'Indeterminate', 'on', ...
+                            'Cancelable', 'on', ...
+                            'Pause', 'on', ...
+                            'Duration', 5);
+            % create view
+            % TODO: call view
+            
+            % change app state
+            self.State = AppState.ParameterPlot;
         end
         
         function setDataOutputParametersMenuCallback(self, src, evt)
