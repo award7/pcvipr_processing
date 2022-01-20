@@ -69,6 +69,34 @@ classdef Controller < handle
     % callbacks from menu
     methods (Access = public)
         
+        % file menu
+        function exitMenuButtonCallback(self, src, evt)
+            self.delete();
+        end
+        
+        % analysis menu
+        function viewFullVasculatureMenuButtonCallback(self, src, evt)
+            % display full vasculature
+            % don't reload if it's currently in this state
+            if strcmp(self.State, 'FullVasculature')
+                return;
+            end
+            
+            % create progress bar for enhancing UX
+            msg = 'Building Full Vascular Angiogram';
+            ProgressBarView(self.View.UIFigure, ...
+                            'Message', msg, ...
+                            'Indeterminate', 'on', ...
+                            'Cancelable', 'on', ...
+                            'Pause', 'on', ...
+                            'Duration', 5);
+            % create view
+            % TODO: call view
+            
+            % change app state
+            self.State = AppState.FullVasculature;
+        end
+        
         function backgroundPhaseCorrectionMenuButtonCallback(self, src, evt)
             % display background phase correction images and widgets
             % don't reload if it's currently in this state
@@ -91,72 +119,8 @@ classdef Controller < handle
             self.State = AppState.BackgroundPhaseCorrection;
         end
         
-        function connectToDbMenuButtonCallback(self, src, evt)
-            % todo: create inputdlg for db parameters
-            self.View.setButtonState('LoadDataMenuButton', ButtonState.on);
-        end
-        
-        function loadDataMenuButtonCallback(self, src, evt)
-            if ~isnumeric(self.Model.DataDirectory) && isfolder(self.Model.DataDirectory)
-                data_directory = uigetdir(self.Model.DataDirectory);
-            else
-                data_directory = uigetdir(pwd);
-            end
-            
-            if data_directory == 0
-                return;
-            end
-            
-            % create progress bar for enhancing UX
-            msg = 'Loading VIPR Files';
-            ProgressBarView(self.View.UIFigure, ...
-                            'Message', msg, ...
-                            'Indeterminate', 'on', ...
-                            'Cancelable', 'on');
-            
-            % load VIPR files into file datastores
-            self.Model.DataDirectory = data_directory;
-            self.Model.VelocityFS = LoadViprDS.getVelocityFileDataStore(self.Model.DataDirectory);
-            self.Model.VelocityMeanFS = LoadViprDS.getVelocityMeanFileDataStore(self.Model.DataDirectory);
-            self.Model.MagDS = LoadViprDS.getMagFileDataStore(self.Model.DataDirectory);
-        end
-        
-        function setDataOutputPathMenuButtonCallback(self, src, evt)
-            out = self.Model.someFcn();
-            disp(out);
-        end
-        
-        function exitMenuButtonCallback(self, src, evt)
-            self.delete();
-        end
-        
-        function testDbConnectionMenuButtonCallback(self, src, evt)
-        end
-        
         function drawROIMenuButtonCallback(self, src, evt)
             % todo: show error dialog 'Not Implemented'
-        end
-        
-        function viewFullVasculatureMenuButtonCallback(self, src, evt)
-            % display full vasculature
-            % don't reload if it's currently in this state
-            if strcmp(self.State, 'FullVasculature')
-                return;
-            end
-            
-            % create progress bar for enhancing UX
-            msg = 'Building Full Vascular Angiogram';
-            ProgressBarView(self.View.UIFigure, ...
-                            'Message', msg, ...
-                            'Indeterminate', 'on', ...
-                            'Cancelable', 'on', ...
-                            'Pause', 'on', ...
-                            'Duration', 5);
-            % create view
-            % TODO: call view
-            
-            % change app state
-            self.State = AppState.FullVasculature;
         end
         
         function viewParametricMapMenuButtonCallback(self, src, evt)
@@ -185,7 +149,6 @@ classdef Controller < handle
         end
         
         function segmentVesselsMenuButtonCallback(self, src, evt)
-            
         end
         
         function vessel3dMenuButtonCallback(self, src, evt)
@@ -232,7 +195,49 @@ classdef Controller < handle
             self.State = AppState.ParameterPlot;
         end
         
+        % datasource menu
+        function loadDataMenuButtonCallback(self, src, evt)
+            if ~isnumeric(self.Model.DataDirectory) && isfolder(self.Model.DataDirectory)
+                data_directory = uigetdir(self.Model.DataDirectory);
+            else
+                data_directory = uigetdir(pwd);
+            end
+            
+            if data_directory == 0
+                return;
+            end
+            
+            % create progress bar for enhancing UX
+            msg = 'Loading VIPR Files';
+            ProgressBarView(self.View.UIFigure, ...
+                            'Message', msg, ...
+                            'Indeterminate', 'on', ...
+                            'Cancelable', 'on');
+            
+            % load VIPR files into file datastores
+            self.Model.DataDirectory = data_directory;
+            self.Model.VelocityFS = LoadViprDS.getVelocityFileDataStore(self.Model.DataDirectory);
+            self.Model.VelocityMeanFS = LoadViprDS.getVelocityMeanFileDataStore(self.Model.DataDirectory);
+            self.Model.MagDS = LoadViprDS.getMagFileDataStore(self.Model.DataDirectory);
+                end
+        
+        function connectToDbMenuButtonCallback(self, src, evt)
+            self.View.setButtonState('LoadDataMenuButton', ButtonState.on);
+        end
+        
+        function testDbConnectionMenuButtonCallback(self, src, evt)
+        end
+        
+        function openDatabaseExplorerMenuButtonCallback(self, src, evt)
+            databaseExplorer();
+        end
+        
         function setDataOutputParametersMenuCallback(self, src, evt)
+        end
+        
+        function setDataOutputPathMenuButtonCallback(self, src, evt)
+            out = self.Model.someFcn();
+            disp(out);
         end
         
     end

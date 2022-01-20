@@ -3,6 +3,10 @@ classdef BaseView < matlab.apps.AppBase
         This class creates the initial figure.
         Any other views are built into a single ParentGrid property and
         then assigned to the UIFigure.
+    
+        Future functionality:
+            *add a 'Checkpoint' option to save current analysis?
+    
     %}
     
     % base figure properties
@@ -40,6 +44,7 @@ classdef BaseView < matlab.apps.AppBase
         LoadDataMenuButton                  matlab.ui.container.Menu;
         DataSourceMenu                      matlab.ui.container.Menu;
         ConnectToDbMenuButton               matlab.ui.container.Menu;
+        OpenDatabaseExplorerMenuButton      matlab.ui.container.Menu;
         TestDbConnectionMenuButton          matlab.ui.container.Menu;
         SetDataOutputPathMenuButton         matlab.ui.container.Menu;
         SetDataOutputParametersMenuButton   matlab.ui.container.Menu;
@@ -86,6 +91,7 @@ classdef BaseView < matlab.apps.AppBase
             app.createLoadDataMenuButton(controller);
             app.createConnectToDbMenuButton(controller);
             app.createTestDbConnectionMenuButton(controller);
+            app.createOpenDatabaseExplorerMenuButton(controller);
             app.createSetDataOutputParametersMenuButton(controller);
             app.createSetDataOutputPathMenuButton(controller);
             
@@ -194,6 +200,14 @@ classdef BaseView < matlab.apps.AppBase
             app.TestDbConnectionMenuButton = uimenu(app.DataSourceMenu);
             app.TestDbConnectionMenuButton.Text = 'Test DB Connection';
             app.TestDbConnectionMenuButton.MenuSelectedFcn = createCallbackFcn(app, @controller.testDbConnectionMenuButtonCallback, true);
+        end
+        
+        function createOpenDatabaseExplorerMenuButton(app, controller)
+            args.Text = 'Open Database Explorer';
+            args.MenuSelectedFcn = createCallbackFcn(app, @controller.openDatabaseExplorerMenuButtonCallback, true);
+            
+            args_array = namedargs2cell(args);
+            app.OpenDatabaseExplorerMenuButton = uimenu(app.DataSourceMenu, args_array{:});
         end
         
         function createSetDataOutputParametersMenuButton(app, controller)
