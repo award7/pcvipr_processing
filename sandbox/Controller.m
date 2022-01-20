@@ -219,44 +219,16 @@ classdef Controller < handle
             self.Model.VelocityFS = LoadViprDS.getVelocityFileDataStore(self.Model.DataDirectory);
             self.Model.VelocityMeanFS = LoadViprDS.getVelocityMeanFileDataStore(self.Model.DataDirectory);
             self.Model.MagDS = LoadViprDS.getMagFileDataStore(self.Model.DataDirectory);
-        end
+                end
         
         function connectToDbMenuButtonCallback(self, src, evt)
-            % get list of available datasources
-            args.ListString = (listDataSources().Name);
-            args.SelectionMode = 'single';
-            args.ListSize = [300 300];
-            args.Name = 'Connect to Database';
-            args.PromptString = 'Select Datasource to Connect';
-            args.OKString = 'Connect';
-            
-            args_array = namedargs2cell(args);
-            [idx, status] = listdlg(args_array{:});
-            if status == 0
-                return;
-            end
-            
-            % attempt to get connection
-            % if username/password is required, then open dialog to get those
-            % otherwise, throw error that connection could not be made
-            try
-                conn = database(args.ListString(idx), '', '');
-            catch ME
-                switch ME.identifier
-                    case 'someError'
-                        % todo: open dialog to get username/password and
-                        % retry connection
-                        
-                end
-                    
-                end
+            self.View.setButtonState('LoadDataMenuButton', ButtonState.on);
         end
         
         function testDbConnectionMenuButtonCallback(self, src, evt)
         end
         
         function openDatabaseExplorerMenuButtonCallback(self, src, evt)
-            
             databaseExplorer();
         end
         
@@ -457,9 +429,9 @@ classdef Controller < handle
     methods (Access = private)
         
         function bgpcUpdateImages(self)
-%             [mag_slice, velocity_slice] = app.get_slices(app.CenterlineToolApp.VIPR);
-%             app.MagImage.CData = mag_slice;
-%             app.VelocityImage.CData = velocity_slice;
+            [mag_slice, velocity_slice] = app.get_slices(app.CenterlineToolApp.VIPR);
+            app.MagImage.CData = mag_slice;
+            app.VelocityImage.CData = velocity_slice;
         end
         
     end
