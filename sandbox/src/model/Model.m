@@ -16,6 +16,11 @@ classdef Model < handle
         VelocityEncoding;
     end
     
+    % database properties
+    properties (Access = public)
+        DatabaseConnection;
+    end
+    
     % only load these when needed
     properties (Dependent)
         Velocity;

@@ -36,6 +36,7 @@ classdef Controller < handle
         function self = Controller()
             clc;
             self.View = BaseView(self);
+            self.View.setButtonState('TestDbConnectionMenuButton', ButtonState.off); 
             self.Model = Model();
             self.State = AppState.FullVasculature;
         end
@@ -222,10 +223,46 @@ classdef Controller < handle
         end
         
         function connectToDbMenuButtonCallback(self, src, evt)
-            self.View.setButtonState('LoadDataMenuButton', ButtonState.on);
+            data_sources = (listDataSources().Name);
+            [idx, status] = listdlg('ListString', data_sources, ...
+                                    'SelectionMode', 'single', ...
+                                    'ListSize', [300 300], ...
+                                    'Name', 'Connect to Database', ...
+                                    'PromptString', 'Select Data Source', ...
+                                    'OKString', 'Connect', ...
+                                    'CancelString', 'Cancel');
+            
+            if status == 0
+                return;
+            end
+            
+            try
+                conn = database(data_sources(idx));
+            catch ME
+                uialert(self.View.UIFigure, ...
+                        'Message', ME.message, ...
+                        'Icon', 'error', ...
+                        'Modal', true);
+                return;
+            end
+            self.Model.DatabaseConnection = conn;
+            self.View.setButtonState('TestDbConnectionMenuButton', ButtonState.on); 
         end
         
         function testDbConnectionMenuButtonCallback(self, src, evt)
+            switch self.Model.DatabaseConnection.isOpen()
+                case 0
+                    msg = "Connection is closed or invalid.";
+                    icon = "warning";
+                case 1
+                    msg = "Connection is active";
+                    icon = "success";
+            end
+            
+            uialert(self.View.UIFigure, ...
+                    'Message', msg, ...
+                    'Icon', icon, ...
+                    'Modal', true);
         end
         
         function openDatabaseExplorerMenuButtonCallback(self, src, evt)
@@ -238,11 +275,8 @@ classdef Controller < handle
         end
         
         function setDataOutputParametersMenuCallback(self, src, evt)
-        end
-        
-        function setDataOutputPathMenuButtonCallback(self, src, evt)
-            out = self.Model.someFcn();
-            disp(out);
+            
+            
         end
         
     end
