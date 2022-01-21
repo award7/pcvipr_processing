@@ -219,7 +219,7 @@ classdef Controller < handle
             self.Model.VelocityFS = LoadViprDS.getVelocityFileDataStore(self.Model.DataDirectory);
             self.Model.VelocityMeanFS = LoadViprDS.getVelocityMeanFileDataStore(self.Model.DataDirectory);
             self.Model.MagDS = LoadViprDS.getMagFileDataStore(self.Model.DataDirectory);
-                end
+        end
         
         function connectToDbMenuButtonCallback(self, src, evt)
             self.View.setButtonState('LoadDataMenuButton', ButtonState.on);
@@ -229,6 +229,11 @@ classdef Controller < handle
         end
         
         function openDatabaseExplorerMenuButtonCallback(self, src, evt)
+            ProgressBarView(self.View.UIFigure, ...
+                            'Message', 'Opening Database Expolerer', ...
+                            'Indeterminate', 'on', ...
+                            'Cancelable', 'off', ...
+                            'Pause', 'off');
             databaseExplorer();
         end
         
