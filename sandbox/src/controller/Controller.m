@@ -37,7 +37,7 @@ classdef Controller < handle
             clc;
             self.View = BaseView(self);
             self.View.setButtonState('TestDbConnectionMenuButton', ButtonState.off); 
-            self.Model = Model();
+            self.Model = BaseModel();
             self.State = AppState.FullVasculature;
         end
         
