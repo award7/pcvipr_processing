@@ -14,18 +14,18 @@ classdef OutputParametersView < matlab.apps.AppBase
     
     % fields in subject details tab
     properties (Access = private)
-        TimePointEditField        matlab.ui.control.EditField;
-        ConditionVisitEditField   matlab.ui.control.EditField;
-        SubjectEditField          matlab.ui.control.EditField;
         StudyEditField            matlab.ui.control.EditField;
+        SubjectEditField          matlab.ui.control.EditField;
+        ConditionVisitEditField   matlab.ui.control.EditField;
+        TimePointEditField        matlab.ui.control.EditField;
     end
     
     % fields in database tab
     properties
-        ConnectToDatabaseButton   matlab.ui.control.Button;
-        TableDropDown             matlab.ui.control.DropDown;
-        DatabaseEditField         matlab.ui.control.EditField;
         DataSourceEditField       matlab.ui.control.EditField;
+        DatabaseEditField         matlab.ui.control.EditField;
+        TableDropDown             matlab.ui.control.DropDown;
+        ConnectToDatabaseButton   matlab.ui.control.Button;
     end
     
     % fields in dataoutput path
