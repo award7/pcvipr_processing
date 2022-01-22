@@ -126,6 +126,7 @@ classdef Controller < handle
         
         function viewParametricMapMenuButtonCallback(self, src, evt)
             % todo: show error dialog 'Not Implemented'
+            return;
         end
         
         function vesselSelectionMenuButtonCallback(self, src, evt)
@@ -275,8 +276,12 @@ classdef Controller < handle
         end
         
         function setDataOutputParametersMenuCallback(self, src, evt)
-            
-            
+%             ProgressBarView(self.View.UIFigure, ...
+%                             'Message', 'Opening Output Parameters', ...
+%                             'Indeterminate', 'on', ...
+%                             'Cancelable', 'off', ...
+%                             'Pause', 'off');
+            OutputParametersView(self);
         end
         
     end
