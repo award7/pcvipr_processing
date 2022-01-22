@@ -48,6 +48,61 @@ classdef RelativePositioning < handle
             sz = struct(screenSize);
         end
         
+        function coordinates = centerChildInParent(self, parent_dims, parent_relative, child_dims, child_relative)
+            % center a child figure within a parent figure
+            % parent_dims = 1x4 vector representing [Left Bottom Width Height]
+            % child_dims = 1x2 vector representing [Width Height]
+            % parent_relative = boolean used to determine the values in parent_dims
+            % child_relative = boolean used to determine the values in child_dims
+            
+            arguments
+                self;
+                parent_dims             (1,4) {mustBeVector, mustBePositive};
+                parent_relative         (1,1) {mustBeNumericOrLogical};
+                child_dims              (1,2) {mustBeNonempty, mustBePositive};
+                child_relative          (1,1) {mustBeNumericOrLogical};
+            end
+            
+            % check inputs to determine if pixels are needed
+            if parent_relative == true
+                parent_dims(1) = parent_dims(1) * self.ScreenWidth;
+                parent_dims(2) = parent_dims(2) * self.ScreenHeight;
+                parent_dims(3) = parent_dims(3) * self.ScreenWidth;
+                parent_dims(4) = parent_dims(4) * self.ScreenHeight;
+            end
+
+            if child_relative == true
+                child_dims(1) = child_dims(1) * self.ScreenWidth;
+                child_dims(2) = child_dims(2) * self.ScreenHeight;
+            end
+            
+            % calculate left and bottom positions
+            %{
+            % 2022-01-22: I am clueless as to why the below formulas didn't work
+            % x = (width/2) + margin
+            % y = (height/2) + margin
+            % x_center_parent = (parent_dims(3)/2) + parent_dims(1);
+            % y_center_parent = (parent_dims(4)/2) + parent_dims(2);
+            
+            % x_center_parent = x_center_child
+            % y_center_parent = y_center_child
+            
+            % x = x_center - (width_child/2)
+            % y = y_center - (height_child/2)
+            % x = x_center_parent - (child_dims(1)/2);
+            % y = y_center_parent - (child_dims(2)/2);
+            %}
+            x = parent_dims(1);
+            y = parent_dims(2);
+            
+            % do some validation
+            coordinates = [x y child_dims(1) child_dims(2)];
+            if any(self.ScreenWidth < coordinates)
+                me = MException('RelativePositioning:OutOfRange', 'Calculated child figure coordinates exceed the screen dimensions');
+                throw(me);
+            end
+        end
+        
         function coordinates = centered_screen(self, obj_width, obj_height)
             left = (self.ScreenWidth - obj_width)/2;
             bottom = (self.ScreenHeight - obj_height)/2;
