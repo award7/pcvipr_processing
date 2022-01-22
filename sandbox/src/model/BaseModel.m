@@ -1,19 +1,18 @@
-classdef Model < handle
+classdef BaseModel < handle
     
-    % main properties
+    
+    
+    % output parameters properties
     properties (Access = public)
-        VelocityDS;
-        VelocityMeanDS;
-        MagDS;
-        VelocityFS;
-        VelocityMeanFS;
-        MagFS;
-        DataDirectory;
-        FOV;
-        NoFrames;
-        Resolution;
-        TimeResolution;
-        VelocityEncoding;
+        Study               {mustBeTextScalar} = '';
+        Subject             {mustBeTextScalar} = '';
+        ConditionOrVisit    {mustBeTextScalar} = '';
+        TimePoint           {mustBeTextScalar} = '';
+        DataSourceName      {mustBeTextScalar} = '';
+        DatabaseName        {mustBeTextScalar} = '';
+        DatabaseTables      (1,:) {mustBeText} = '';
+        OutputAsCsv         (1,1) logical = true;
+        OutputPath          {mustBeFolder} = fullfile(pwd);
     end
     
     % database properties
@@ -44,9 +43,9 @@ classdef Model < handle
         VelocityImage;
     end
     
-    methods
+    methods (Access = ?Controller)
         
-        function self = Model() 
+        function self = BaseModel() 
         end
                
     end
@@ -70,17 +69,7 @@ classdef Model < handle
             val = zeros(320, 320, 320);
         end
         
-        function val = get.VelocityDS(self)
-            val = self.VelocityDS;
-        end
         
-        function val = get.VelocityMeanDS(self)
-            val = self.VelocityMeanDS;
-        end
-        
-        function val = get.MagDS(self)
-            val = self.MagDS;
-        end
         
     end
     
@@ -169,32 +158,6 @@ classdef Model < handle
             end
         end
         
-        function set.VelocityDS(self, ds)
-            switch class(ds)
-                case 'matlab.io.datastore.FileDatastore'
-                    self.VelocityDS = ds;
-                otherwise
-                    % todo: throw error
-            end
-        end
-        
-        function set.VelocityMeanDS(self, ds)
-            switch class(ds)
-                case 'matlab.io.datastore.FileDatastore'
-                    self.VelocityMeanDS = ds;
-                otherwise
-                    % todo: throw error
-            end
-        end
-        
-        function set.MagDS(self, ds)
-            switch class(ds)
-                case 'matlab.io.datastore.FileDatastore'
-                    self.MagDS = ds;
-                otherwise
-                    % todo: throw error
-            end
-        end
         
     end
     
