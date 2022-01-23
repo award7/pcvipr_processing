@@ -188,8 +188,8 @@ classdef BackgroundPhaseCorrection < handle
                 back = single(back);
                 % TODO: read in this data via datastore and remove from memory
                 VIPR.VelocityMean(:, :, :, k) = VIPR.VelocityMean(:, :, :, k) - back;
-                for m = 0:VIPR.NoFrames - 1
-                    VIPR.Velocity(:, :, :, k, m+1) = VIPR.Velocity(:, :, :, k, m+1) - back;
+                for m = 1:VIPR.NoFrames
+                    VIPR.Velocity(:, :, :, k, m) = VIPR.Velocity(:, :, :, k, m) - back;
                 end
             end
         end
