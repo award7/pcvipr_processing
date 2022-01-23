@@ -26,6 +26,7 @@ classdef BaseController < handle
         BaseView;
         BaseModel;
         ViprModel;
+        BackgroundPhaseCorrectionModel;
     end
     
     properties (Access = private)
@@ -57,11 +58,11 @@ classdef BaseController < handle
     % callbacks for main figure window
     methods (Access = public)
         
-        function UIFigureCloseRequest(self, ~)
+        function UIFigureCloseRequest(self, ~, ~)
             self.delete();
         end
         
-        function UIWindowKeyPressFcn(self, evt)
+        function UIWindowKeyPressFcn(self, src, evt)
             switch char(evt.Modifier)
                 case 'control'
                     if strcmpi(evt.Key, 'w')
@@ -118,8 +119,16 @@ classdef BaseController < handle
                             'Cancelable', 'on', ...
                             'Pause', 'on', ...
                             'Duration', 5);
+            
+            if isempty(self.BackgroundPhaseCorrectionModel)
+                % assign the BackgroundPhaseCorrectionModel object to the BackgroundPhaseCorrectionModel property of this class
+                self.BackgroundPhaseCorrectionModel = BackgroundPhaseCorrectionModel();
+            end
+                        
             % create view
-            BackgroundPhaseCorrectionView(self);
+            view = BackgroundPhaseCorrectionView(self);
+            self.BackgroundPhaseCorrectionModel.initMagImage(view.MagAxes);
+            self.BackgroundPhaseCorrectionModel.initVelocityImage(view.VelocityAxes);
             
             % change app state
             self.State = AppState.BackgroundPhaseCorrection;
@@ -331,8 +340,8 @@ classdef BaseController < handle
                     value = value / 100;
             end
 
-            self.BaseModel.Image = value;
-%             src.update_images();
+            self.BackgroundPhaseCorrectionModel.setImage(value);
+            % src.update_images();
         end
         
         function bgpcVmaxValueChangedCallback(self, src, evt)
