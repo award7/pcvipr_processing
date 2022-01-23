@@ -1,7 +1,5 @@
 classdef BaseModel < handle
     
-    
-    
     % output parameters properties
     properties (Access = public)
         Study               {mustBeTextScalar} = '';
@@ -43,7 +41,7 @@ classdef BaseModel < handle
         VelocityImage;
     end
     
-    methods (Access = ?Controller)
+    methods (Access = ?BaseController)
         
         function self = BaseModel() 
         end
