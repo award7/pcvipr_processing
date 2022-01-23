@@ -1,17 +1,6 @@
 classdef BaseModel < handle
     
-    % output parameters properties
-    properties (Access = public)
-        Study               {mustBeTextScalar} = '';
-        Subject             {mustBeTextScalar} = '';
-        ConditionOrVisit    {mustBeTextScalar} = '';
-        TimePoint           {mustBeTextScalar} = '';
-        DataSourceName      {mustBeTextScalar} = '';
-        DatabaseName        {mustBeTextScalar} = '';
-        DatabaseTables      (1,:) {mustBeText} = '';
-        OutputAsCsv         (1,1) logical = true;
-        OutputPath          {mustBeFolder} = fullfile(pwd);
-    end
+    
     
     % database properties
     properties (Access = public)
