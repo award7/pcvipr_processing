@@ -1,23 +1,6 @@
 classdef BaseModel < handle
     
     
-    
-    % database properties
-    properties (Access = public)
-        DatabaseConnection;
-    end
-    
-    % only load these when needed
-    properties (Dependent)
-        Velocity;
-        VelocityMean;
-        MAG;
-        MAGr;
-        MAGg;
-        MAGb;
-        WhiteImage;
-    end
-    
     % BackgroundPhaseCorrection-specific properties
     properties (Access = public)
         Image = 0.5;
@@ -39,10 +22,6 @@ classdef BaseModel < handle
     
     % getters
     methods
-        
-        function val = get.WhiteImage(self)
-            val = 255 * ones(480, 640, 3, 'uint8');
-        end
         
         function val = get.MagImage(self)
             val = self.MagImage;
