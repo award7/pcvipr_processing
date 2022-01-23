@@ -1,165 +1,139 @@
 classdef LoadViprDS
     
     % create file datastores
-    methods (Static)
+    methods (Access = ?BaseController, Static)
         
-        function fs = getVelocityFileDataStore(data_directory)
+        function fs = getVelocityFileDataStore(data_directory, opts)
             arguments
                 data_directory {mustBeFolder};
+                opts.SearchTerm {mustBeTextScalar} = 'ph_*vd*.dat';
+                opts.ExpectedNumFiles (1,1) {mustBeInteger, mustBePositive};
             end
             
-            % create velocity file store 
-            search_term = 'ph_*vd*.dat';
-            
-            % 60 total files = 20 frames x 3 directions
-            num_files = 20 * 3;
-            
-            fs = LoadViprDS.getFileDatastore(data_directory, 'SearchTerm', search_term, 'ExpectedNumFiles', num_files);
+            files = LoadViprDS.getFiles(data_directory, opts.SearchTerm, opts);
+            fs = fileDatastore(files, 'ReadFcn', @LoadViprDS.loadVelocityData);
         end
         
-        function fs = getVelocityMeanFileDataStore(data_directory)
+        function fs = getVelocityMeanFileDataStore(data_directory, opts)
             arguments
                 data_directory {mustBeFolder};
+                opts.SearchTerm {mustBeTextScalar} = 'comp_vd*.dat';
+                opts.ExpectedNumFiles (1,1) {mustBeInteger, mustBePositive};
             end
             
-            search_term = 'comp_vd*.dat';
-            num_files = 3;
-            
-            fs = LoadViprDS.getFileDatastore(data_directory, 'SearchTerm', search_term, 'ExpectedNumFiles', num_files);
+            files = LoadViprDS.getFiles(data_directory, opts.SearchTerm, opts);
+            fs = fileDatastore(files, 'ReadFcn', @LoadViprDS.loadVelocityMeanData);
         end
 
-        function fs = getMagFileDataStore(data_directory)
+        function fs = getMagFileDataStore(data_directory, opts)
             arguments
                 data_directory {mustBeFolder};
+                opts.SearchTerm {mustBeTextScalar} = 'MAG.dat';
+                opts.ExpectedNumFiles (1,1) {mustBeInteger, mustBePositive};
             end
             
-            search_term = 'MAG.dat';
-            num_files = 1;
-            
-            fs = LoadViprDS.getFileDatastore(data_directory, 'SearchTerm', search_term, 'ExpectedNumFiles', num_files);
+            files = LoadViprDS.getFiles(data_directory, opts.SearchTerm, opts);
+            fs = fileDatastore(files, 'ReadFcn', @LoadViprDS.loadMagData);
         end
         
     end
     
-    % create datastores by loadin data from files
-    methods (Static)
+    % load functions for file data stores
+    methods (Access = private, Static)
         
-        function ds = loadVelocityData(fs, resolution)
-            arguments
-                fs {mustBeUnderlyingType(fs, 'matlab.io.datastore.FileDatastore')};
-                resolution {mustBeInteger, mustBePositive};
-            end
+        % TODO: consolidate
+        
+        function data = loadVelocityData(filename)
+            % get resolution of scan
+            % assumes the header file is in the same directory as the MAG file
+            [fpath, ~, ~] = fileparts(filename);
+            header = LoadViprDS.parseArray(fpath);
+            res = header.matrixx;
             
-            % get # of partitions
-            % 60 total files = 20 frames x 3 directions --> do 20 partitions
-            n_partitions = num_files/3;
-           
-            % init data array
-            data = zeros(resolution, resolution, resolution, 3, 20);
-            for i = 1:n_partitions
-               % get a partition
-               sub_ds = fs.partition(n_partitions, i);
-               data(:,:,:,:,i) = LoadViprDS.readDat(sub_ds, resolution);
-            end
+            % read in data
+            fid = fopen(filename);
+            raw_data = fread(fid, 'short');
+            fclose(fid);
             
-            % place into arrayDatastore
-            % make IterationDimension = to the frame dimension
-            % make ReadSize so it reads all three directions for a given
-            % frame
-            ds = arrayDatastore(data, 'IterationDimension', 5, 'ReadSize', 3);
+            % reshape the data
+            data = zeros(res, res, res);
+            data(:,:,:) = reshape(raw_data, res, res, res);
         end
 
-        function ds = loadVelocityMeanData(fs, resolution)
-            arguments
-                fs {mustBeUnderlyingType(fs, 'matlab.io.datastore.FileDatastore')};
-                resolution {mustBeInteger, mustBePositive};
-            end
+        function data = loadVelocityMeanData(filename)
+            % get resolution of scan
+            % assumes the header file is in the same directory as the MAG file
+            [fpath, ~, ~] = fileparts(filename);
+            header = LoadViprDS.parseArray(fpath);
+            res = header.matrixx;
             
-            % init data array
-            data = zeros(resolution, resolution, resolution, num_files);
+            % read in data
+            fid = fopen(filename);
+            raw_data = fread(fid, 'short');
+            fclose(fid);
             
-            data(:,:,:,:) = LoadViprDS.readDat(fs, resolution);
-            
-            % place into arrayDataStore
-            % make IterationDimension = to the direction dimension
-            % make ReadSize so it reads only one direction
-            ds = arrayDatastore(data, 'IterationDimension', 4, 'ReadSize', 1);
+            % reshape the data
+            data = zeros(res, res, res);
+            data(:,:,:) = reshape(raw_data, res, res, res);
         end
         
-        function ds = loadMagData(fs, resolution)
-            arguments
-                fs {mustBeUnderlyingType(fs, 'matlab.io.datastore.FileDatastore')};
-                resolution {mustBeInteger, mustBePositive};
-            end
-
-            data = LoadViprDS.readDat(fs, resolution);
-            data = single(data);
-            ds = arrayDatastore(data, 'IterationDimension', 3, 'ReadSize', 1);
+        function data = loadMagData(filename)
+            % get resolution of scan
+            % assumes the header file is in the same directory as the MAG file
+            [fpath, ~, ~] = fileparts(filename);
+            header = LoadViprDS.parseArray(fpath);
+            res = header.matrixx;
+            
+            % read in data
+            fid = fopen(filename);
+            raw_data = fread(fid, 'short');
+            fclose(fid);
+            
+            % reshape the data
+            data = zeros(res, res, res);
+            data(:,:,:) = single(reshape(raw_data, res, res, res));
         end
         
     end
     
     % helper functions
-    methods (Static)
+    methods (Access = private, Static)
         
-        function fs = getFileDatastore(data_directory, opts)
-            arguments
-                data_directory {mustBeFolder};
-                opts.SearchTerm {mustBeTextScalar} = '*';
-                opts.ExpectedNumFiles {mustBeInteger, mustBePositive} = 1;
-            end
-            
-            file_struct = dir(fullfile(data_directory, opts.SearchTerm));
-            n_files = length(file_struct);
+        function files = getFiles(data_directory, search_term, opts)
+            % get files into struct
+            file_struct = dir(fullfile(data_directory, search_term));
             
             % do a check
-            if ne(n_files, opts.ExpectedNumFiles)
-                % todo: throw error indicating that that the #files found does not
-                % match what was expected, check search term or file path
-                % throw ME;
+            num_files = length(file_struct);
+            try
+                if ne(num_files, opts.ExpectedNumFiles)
+                    errid = 'LoadVipr:checkFileCount:failed';
+                    msg = 'Number of files found (%d) does not equal the expected number of files (%d)';
+                    me = MException(errid, msg, num_files, opts.ExpectedNumFiles);
+                    throw(me);
+                end
+            catch me
+                switch me.identifier
+                    case 'MATLAB:nonExistentField'
+                        % do nothing
+                    otherwise
+                        rethrow(me);
+                end
             end
             
-            files = cell(n_files, 1);
+            files = cell(num_files, 1);
             
-            for i = 1:n_files
+            for i = 1:num_files
                 files{i} = fullfile(file_struct(i).folder, file_struct(i).name);
-            end
-            
-            fs = fileDatastore(files, 'ReadFcn', @LoadViprDS.customLoad);
-        end
-        
-        function data = customLoad(filename)
-            arguments
-                filename {mustBeFile};
-            end
-            
-            fid = fopen(filename);
-            data = fread(fid, 'short');
-            fclose(fid);
-        end
-        
-        function data = readDat(fs, resolution)
-            arguments
-                fs {mustBeUnderlyingType(fs, 'matlab.io.datastore.FileDatastore')};
-                resolution {mustBeInteger, mustBePositive};
-            end
-            
-            data = zeros(resolution, resolution, resolution, 3);
-            i = 1;
-            
-            while fs.hasdata
-                raw_data = fs.read;
-                data(:,:,:,i) = reshape(raw_data, 320, 320, 320);
-                i = i + 1;
             end
         end
         
     end
-    
+        
     % methods to read header info
     methods (Static)
     
-        function [header] = parseArray(data_directory)
+        function header = parseArray(data_directory)
             % Read columns of data as strings:
             % For more information, see the TEXTSCAN documentation.
             
