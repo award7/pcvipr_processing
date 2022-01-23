@@ -10,6 +10,7 @@ classdef OutputParametersModel < handle
         DatabaseTables;
         OutputAsCsv;
         OutputPath;
+        DatabaseConnection;
     end
     
     % constructor
@@ -93,6 +94,14 @@ classdef OutputParametersModel < handle
                 val {mustBeFolder};
             end
             self.OutputPath = val;
+        end
+        
+        function setDatabaseConnection(self, val)
+            arguments
+                self;
+                val (1,1) {mustBeA(val, 'database')};
+            end
+            self.DatabaseConnection = val;
         end
         
     end
