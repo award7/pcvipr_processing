@@ -33,21 +33,30 @@ classdef BaseController < handle
         State   AppState;
     end
     
+    % constructor
     methods (Access = public)
         
         function self = BaseController()
             clc;
+            fprintf('Loading PC VIPR Processing...');
+            
             self.BaseView = BaseView(self);
             self.BaseView.setButtonState('TestDbConnectionMenuButton', ButtonState.off); 
             self.BaseModel = BaseModel();
+            
+            pause(3);
+            clc;
+            
             self.State = AppState.FullVasculature;
         end
         
     end
     
+    % deleter
     methods (Access = private)
         
         function delete(self)
+            % todo: create dialog about saving current analysis/confirmation of exiting
             delete(self.BaseView.UIFigure);
             delete(self.BaseView);
             delete(self.BaseModel);
