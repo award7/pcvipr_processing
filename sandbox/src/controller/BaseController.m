@@ -1,12 +1,12 @@
-classdef Controller < handle
+classdef BaseController < handle
     %{
     Following MVC design, this is the main class that coordinates the GUI,
     underlying data, and business logic.
     
     Business logic methods are stored here.
-    Data is stored in Model.
+    Data is stored in BaseModel.
     UI components are in the Views. Data for images, etc. are stored in the
-    Model.
+    BaseModel.
     
     Style Convention:
         *PascalCase for properties
@@ -23,8 +23,9 @@ classdef Controller < handle
     %}
     
     properties (Access = public)
-        View;
-        Model;
+        BaseView;
+        BaseModel;
+        ViprModel;
     end
     
     properties (Access = private)
@@ -33,18 +34,22 @@ classdef Controller < handle
     
     methods (Access = public)
         
-        function self = Controller()
+        function self = BaseController()
             clc;
-            self.View = BaseView(self);
-            self.View.setButtonState('TestDbConnectionMenuButton', ButtonState.off); 
-            self.Model = BaseModel();
+            self.BaseView = BaseView(self);
+            self.BaseView.setButtonState('TestDbConnectionMenuButton', ButtonState.off); 
+            self.BaseModel = BaseModel();
             self.State = AppState.FullVasculature;
         end
         
+    end
+    
+    methods (Access = private)
+        
         function delete(self)
-            delete(self.View.UIFigure);
-            delete(self.View);
-            delete(self.Model);
+            delete(self.BaseView.UIFigure);
+            delete(self.BaseView);
+            delete(self.BaseModel);
         end
         
     end
@@ -52,11 +57,11 @@ classdef Controller < handle
     % callbacks for main figure window
     methods (Access = public)
         
-        function UIFigureCloseRequest(self, src, evt)
+        function UIFigureCloseRequest(self, ~)
             self.delete();
         end
         
-        function UIWindowKeyPressFcn(self, src, evt)
+        function UIWindowKeyPressFcn(self, evt)
             switch char(evt.Modifier)
                 case 'control'
                     if strcmpi(evt.Key, 'w')
@@ -68,10 +73,10 @@ classdef Controller < handle
     end
     
     % callbacks from menu
-    methods (Access = public)
+    methods (Access = ?BaseView)
         
         % file menu
-        function exitMenuButtonCallback(self, src, evt)
+        function exitMenuButtonCallback(self, ~, ~)
             self.delete();
         end
         
@@ -85,7 +90,7 @@ classdef Controller < handle
             
             % create progress bar for enhancing UX
             msg = 'Building Full Vascular Angiogram';
-            ProgressBarView(self.View.UIFigure, ...
+            ProgressBarView(self.BaseView.UIFigure, ...
                             'Message', msg, ...
                             'Indeterminate', 'on', ...
                             'Cancelable', 'on', ...
@@ -107,7 +112,7 @@ classdef Controller < handle
             
             % create progress bar for enhancing UX
             msg = 'Preparing Background Phase Correction';
-            ProgressBarView(self.View.UIFigure, ...
+            ProgressBarView(self.BaseView.UIFigure, ...
                             'Message', msg, ...
                             'Indeterminate', 'on', ...
                             'Cancelable', 'on', ...
@@ -136,7 +141,7 @@ classdef Controller < handle
             
             % create progress bar for enhancing UX
             msg = 'Rendering MR Images for Vessel Selection';
-            ProgressBarView(self.View.UIFigure, ...
+            ProgressBarView(self.BaseView.UIFigure, ...
                             'Message', msg, ...
                             'Indeterminate', 'on', ...
                             'Cancelable', 'on', ...
@@ -162,7 +167,7 @@ classdef Controller < handle
             
             % create progress bar for enhancing UX
             msg = 'Rendering Selected Vessels in 3D';
-            ProgressBarView(self.View.UIFigure, ...
+            ProgressBarView(self.BaseView.UIFigure, ...
                             'Message', msg, ...
                             'Indeterminate', 'on', ...
                             'Cancelable', 'on', ...
@@ -184,7 +189,7 @@ classdef Controller < handle
             
             % create progress bar for enhancing UX
             msg = 'Plotting Vessel Parameters';
-            ProgressBarView(self.View.UIFigure, ...
+            ProgressBarView(self.BaseView.UIFigure, ...
                             'Message', msg, ...
                             'Indeterminate', 'on', ...
                             'Cancelable', 'on', ...
@@ -199,8 +204,16 @@ classdef Controller < handle
         
         % datasource menu
         function loadDataMenuButtonCallback(self, src, evt)
-            if ~isnumeric(self.Model.DataDirectory) && isfolder(self.Model.DataDirectory)
-                data_directory = uigetdir(self.Model.DataDirectory);
+            if isempty(self.ViprModel)
+                % assign the ViprModel object to the ViprModel property of this class
+                self.ViprModel = ViprModel();
+                data_directory = "";
+            else
+                data_directory = self.ViprModel.DataDirectory();
+            end
+            
+            if ~isnumeric(data_directory) && isfolder(data_directory)
+                data_directory = uigetdir(data_directory);
             else
                 data_directory = uigetdir(pwd);
             end
@@ -211,16 +224,30 @@ classdef Controller < handle
             
             % create progress bar for enhancing UX
             msg = 'Loading VIPR Files';
-            ProgressBarView(self.View.UIFigure, ...
+            ProgressBarView(self.BaseView.UIFigure, ...
                             'Message', msg, ...
                             'Indeterminate', 'on', ...
                             'Cancelable', 'on');
-            
+             
             % load VIPR files into file datastores
-            self.Model.DataDirectory = data_directory;
-            self.Model.VelocityFS = LoadViprDS.getVelocityFileDataStore(self.Model.DataDirectory);
-            self.Model.VelocityMeanFS = LoadViprDS.getVelocityMeanFileDataStore(self.Model.DataDirectory);
-            self.Model.MagDS = LoadViprDS.getMagFileDataStore(self.Model.DataDirectory);
+            velocity_fs = LoadViprDS.getVelocityFileDataStore(data_directory);
+            self.ViprModel.setVelocityFS(velocity_fs);
+            
+            velocity_mean_fs = LoadViprDS.getVelocityMeanFileDataStore(data_directory);
+            self.ViprModel.setVelocityMeanFS(velocity_mean_fs);
+            
+            mag_fs = LoadViprDS.getMagFileDataStore(data_directory);
+            self.ViprModel.setMagFS(mag_fs);
+            
+            % get vipr parameters for processing and assign to model properties
+            self.ViprModel.setDataDirectory(data_directory);
+            vipr_struct = LoadViprDS.parseArray(data_directory);
+            self.ViprModel.setFOV(vipr_struct.fovx/10);
+            self.ViprModel.setTimeResolution(vipr_struct.timeres);
+            self.ViprModel.setNoFrames(vipr_struct.frames);
+            self.ViprModel.setResolution(vipr_struct.matrixx);
+            self.ViprModel.setVelocityEncoding(vipr_struct.VENC);
+            self.ViprModel.setScanParameters(vipr_struct);
         end
         
         function connectToDbMenuButtonCallback(self, src, evt)
@@ -240,18 +267,18 @@ classdef Controller < handle
             try
                 conn = database(data_sources(idx));
             catch ME
-                uialert(self.View.UIFigure, ...
+                uialert(self.BaseView.UIFigure, ...
                         'Message', ME.message, ...
                         'Icon', 'error', ...
                         'Modal', true);
                 return;
             end
-            self.Model.DatabaseConnection = conn;
-            self.View.setButtonState('TestDbConnectionMenuButton', ButtonState.on); 
+            self.BaseModel.DatabaseConnection = conn;
+            self.BaseView.setButtonState('TestDbConnectionMenuButton', ButtonState.on); 
         end
         
         function testDbConnectionMenuButtonCallback(self, src, evt)
-            switch self.Model.DatabaseConnection.isOpen()
+            switch self.BaseModel.DatabaseConnection.isOpen()
                 case 0
                     msg = "Connection is closed or invalid.";
                     icon = "warning";
@@ -260,14 +287,14 @@ classdef Controller < handle
                     icon = "success";
             end
             
-            uialert(self.View.UIFigure, ...
+            uialert(self.BaseView.UIFigure, ...
                     'Message', msg, ...
                     'Icon', icon, ...
                     'Modal', true);
         end
         
         function openDatabaseExplorerMenuButtonCallback(self, src, evt)
-            ProgressBarView(self.View.UIFigure, ...
+            ProgressBarView(self.BaseView.UIFigure, ...
                             'Message', 'Opening Database Expolerer', ...
                             'Indeterminate', 'on', ...
                             'Cancelable', 'off', ...
@@ -276,7 +303,7 @@ classdef Controller < handle
         end
         
         function setDataOutputParametersMenuCallback(self, src, evt)
-%             ProgressBarView(self.View.UIFigure, ...
+%             ProgressBarView(self.BaseView.UIFigure, ...
 %                             'Message', 'Opening Output Parameters', ...
 %                             'Indeterminate', 'on', ...
 %                             'Cancelable', 'off', ...
@@ -287,7 +314,7 @@ classdef Controller < handle
     end
 
     % callbacks from BackgroundPhaseCorrectionView
-    methods (Access = public)
+    methods (Access = ?BackgroundPhaseCorrectionView)
         
         function bgpcImageValueChangedCallback(self, src, evt)
             value = evt.Value;
@@ -304,7 +331,7 @@ classdef Controller < handle
                     value = value / 100;
             end
 
-            self.Model.Image = value;
+            self.BaseModel.Image = value;
 %             src.update_images();
         end
         
@@ -323,7 +350,7 @@ classdef Controller < handle
                     value = value / 100;
             end
 
-            self.Model.Vmax = value;
+            self.BaseModel.Vmax = value;
 %             src.update_images();
         end
         
@@ -342,7 +369,7 @@ classdef Controller < handle
                     value = value / 100;
             end
 
-            self.Model.CDThreshold = value;
+            self.BaseModel.CDThreshold = value;
 %             src.update_images();
         end
         
@@ -361,19 +388,19 @@ classdef Controller < handle
                     value = value / 100;
             end
 
-            self.Model.NoiseThreshold = value;
+            self.BaseModel.NoiseThreshold = value;
 %             src.update_images();
         end
         
         function bgpcFitOrderValueChangedCallback(self, src, evt)
             value = floor(evt.Value);
-            self.Model.FitOrder = value;
+            self.BaseModel.FitOrder = value;
 %             src.update_images();
         end
         
         function bgpcApplyCorrectionValueChangedCallback(self, src, evt)
             value = evt.Value;
-            self.Model.ApplyCorrection = value;
+            self.BaseModel.ApplyCorrection = value;
         end
         
         function bgpcUpdateButtonPushed(self, src, evt)
@@ -398,7 +425,7 @@ classdef Controller < handle
     end
     
     % callbacks from VesselSelectionView
-    methods (Access = public)
+    methods (Access = ?VesselSelectionView)
         
         function vsContextMenuOptionSelected(self, src, evt)
             disp(evt);
@@ -419,7 +446,7 @@ classdef Controller < handle
     end
     
     % callbacks from Vessel3DView
-    methods (Access = public)
+    methods (Access = ?Vessel3DView)
         
         function vs3dToolbarValueChangedCallback(self, src, evt)
             disp(evt);
@@ -445,7 +472,7 @@ classdef Controller < handle
     end
     
     % callbacks from ParameterPlotView
-    methods (Access = public)
+    methods (Access = ?ParameterPlotView)
         
         function ppLowerVoxelSpinnerValueChanged(self, src, evt)
             disp(evt);
