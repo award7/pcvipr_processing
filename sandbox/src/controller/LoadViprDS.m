@@ -159,7 +159,7 @@ classdef LoadViprDS
     % methods to read header info
     methods (Static)
     
-        function [no_frames, time_resolution, fov, resolution, velocity_encoding] = parseArray(data_directory)
+        function [header] = parseArray(data_directory)
             % Read columns of data as strings:
             % For more information, see the TEXTSCAN documentation.
             
@@ -169,7 +169,7 @@ classdef LoadViprDS
             
             delimiter = ' ';
             formatSpec = '%s%s%[^\n\r]';
-            fid = fopen([data_directory '\pcvipr_header.txt'], 'r'); 
+            fid = fopen(fullfile(data_directory, 'pcvipr_header.txt'), 'r'); 
             if fid < 0
                 error('Could not open pcvipr_header.txt file');
             end
@@ -177,28 +177,25 @@ classdef LoadViprDS
             dataArray = textscan(fid, formatSpec, 'Delimiter', delimiter, 'MultipleDelimsAsOne', true,  'ReturnOnError', false);
             fclose(fid);
             
-            dataArray{1,2} = cellfun(@str2num, dataArray{1,2}(:), 'UniformOutput', 0);
+            pfile = string(dataArray{1,2}(3));
+            dataArray{1,2} = cellfun(@str2num, dataArray{1,2}(:), 'UniformOutput', false);
             header = cell2struct(dataArray{1,2}(:), dataArray{1,1}(:), 1);
-            headerFields = fieldnames(header);
-            for k = 1:length(headerFields)
-                % todo: change to output to dialog
-                disp(strcat(headerFields{k}, {': '}, string(header.(headerFields{k}))));
-            end
-
-            % number of reconstructed frames
-            no_frames = header.frames;                                             
+            header.pfile = pfile;
             
-            % temporal Resolutionolution
-            time_resolution = header.timeres;
-            
-            % field of view in cm
-            fov = (header.fovx)/10;                                              
-            
-            % number of pixels in row,col,slices
-            resolution = header.matrixx;                                                
-            
-            % Velocity encoding
-            velocity_encoding = header.VENC;
+%             % number of reconstructed frames
+%             no_frames = header.frames;                                             
+%             
+%             % temporal Resolutionolution
+%             time_resolution = header.timeres;
+%             
+%             % field of view in cm
+%             fov = (header.fovx)/10;                                              
+%             
+%             % number of pixels in row,col,slices
+%             resolution = header.matrixx;                                                
+%             
+%             % Velocity encoding
+%             velocity_encoding = header.VENC;
         end
         
     end
