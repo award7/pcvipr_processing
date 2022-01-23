@@ -4,6 +4,9 @@ classdef LoadViprDS
     methods (Access = ?BaseController, Static)
         
         function fs = getVelocityFileDataStore(data_directory, opts)
+            % Note: when calling the ReadFcn, it will only return a single 320^3 array
+            % the caller needs to partition the fs into 20 parts (j), then loop over the files
+            % in the partition (i) to get the 320x320x320xixj array
             arguments
                 data_directory {mustBeFolder};
                 opts.SearchTerm {mustBeTextScalar} = 'ph_*vd*.dat';
@@ -11,10 +14,12 @@ classdef LoadViprDS
             end
             
             files = LoadViprDS.getFiles(data_directory, opts.SearchTerm, opts);
-            fs = fileDatastore(files, 'ReadFcn', @LoadViprDS.loadVelocityData);
+            fs = fileDatastore(files, 'ReadFcn', @LoadViprDS.viprFileLoader);
         end
         
         function fs = getVelocityMeanFileDataStore(data_directory, opts)
+            % Note: when calling the ReadFcn, it will only return a single 320^3 array
+            % the caller needs to partition the fs into parts (i) to get the 320x320x320xi array
             arguments
                 data_directory {mustBeFolder};
                 opts.SearchTerm {mustBeTextScalar} = 'comp_vd*.dat';
@@ -22,10 +27,12 @@ classdef LoadViprDS
             end
             
             files = LoadViprDS.getFiles(data_directory, opts.SearchTerm, opts);
-            fs = fileDatastore(files, 'ReadFcn', @LoadViprDS.loadVelocityMeanData);
+            fs = fileDatastore(files, 'ReadFcn', @LoadViprDS.viprFileLoader);
         end
 
         function fs = getMagFileDataStore(data_directory, opts)
+            % Note: when calling the ReadFcn, it will return the array properly shaped
+            % but the caller needs to cast it to the proper data type (i.e. single)
             arguments
                 data_directory {mustBeFolder};
                 opts.SearchTerm {mustBeTextScalar} = 'MAG.dat';
@@ -33,34 +40,15 @@ classdef LoadViprDS
             end
             
             files = LoadViprDS.getFiles(data_directory, opts.SearchTerm, opts);
-            fs = fileDatastore(files, 'ReadFcn', @LoadViprDS.loadMagData);
+            fs = fileDatastore(files, 'ReadFcn', @LoadViprDS.viprFileLoader);
         end
         
     end
     
     % load functions for file data stores
     methods (Access = private, Static)
-        
-        % TODO: consolidate
-        
-        function data = loadVelocityData(filename)
-            % get resolution of scan
-            % assumes the header file is in the same directory as the MAG file
-            [fpath, ~, ~] = fileparts(filename);
-            header = LoadViprDS.parseArray(fpath);
-            res = header.matrixx;
-            
-            % read in data
-            fid = fopen(filename);
-            raw_data = fread(fid, 'short');
-            fclose(fid);
-            
-            % reshape the data
-            data = zeros(res, res, res);
-            data(:,:,:) = reshape(raw_data, res, res, res);
-        end
 
-        function data = loadVelocityMeanData(filename)
+        function data = viprFileLoader(filename)
             % get resolution of scan
             % assumes the header file is in the same directory as the MAG file
             [fpath, ~, ~] = fileparts(filename);
@@ -75,23 +63,6 @@ classdef LoadViprDS
             % reshape the data
             data = zeros(res, res, res);
             data(:,:,:) = reshape(raw_data, res, res, res);
-        end
-        
-        function data = loadMagData(filename)
-            % get resolution of scan
-            % assumes the header file is in the same directory as the MAG file
-            [fpath, ~, ~] = fileparts(filename);
-            header = LoadViprDS.parseArray(fpath);
-            res = header.matrixx;
-            
-            % read in data
-            fid = fopen(filename);
-            raw_data = fread(fid, 'short');
-            fclose(fid);
-            
-            % reshape the data
-            data = zeros(res, res, res);
-            data(:,:,:) = single(reshape(raw_data, res, res, res));
         end
         
     end
