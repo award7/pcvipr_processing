@@ -66,7 +66,7 @@ classdef OutputParametersView < matlab.apps.AppBase
         function createComponents(app, controller)
             app.createFigure(controller);
             app.createTabGroup(controller);
-            app.createOkButton();
+            app.createOkButton(controller);
             
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';
@@ -157,6 +157,7 @@ classdef OutputParametersView < matlab.apps.AppBase
             % Create DataSourceEditField
             app.DataSourceEditField = uieditfield(tab, 'text');
             app.DataSourceEditField.Position = [120 136 120 20];
+            app.DataSourceEditField.Editable = false;
             if ~isempty(controller.OutputParametersModel.DataSourceName)
                 app.DataSourceEditField.Value = controller.OutputParametersModel.DataSourceName;
             else
@@ -164,7 +165,7 @@ classdef OutputParametersView < matlab.apps.AppBase
             end
 
             % Create DatabaseEditField
-            % todo: change to dropdown?? Or a disabled edit field??
+            % todo: change to dropdown??
             app.DatabaseEditField = uieditfield(tab, 'text');
             app.DatabaseEditField.Position = [120 97 120 20];
             if ~isempty(controller.OutputParametersModel.DataSourceName)
@@ -178,7 +179,7 @@ classdef OutputParametersView < matlab.apps.AppBase
             app.TableDropDown = uidropdown(tab);
             app.TableDropDown.Position = [120 58 120 20];
             if ~isempty(controller.OutputParametersModel.DataSourceName)
-                app.TableDropDown.Items = controller.OutputParametersModel.DatabaseTables;
+                app.TableDropDown.Items = controller.OutputParametersModel.DatabaseTable;
             else
                 app.TableDropDown.Items = [""];
             end
@@ -187,7 +188,7 @@ classdef OutputParametersView < matlab.apps.AppBase
             btn = uibutton(tab, 'push');
             btn.Position = [255 136 30 20];
             btn.Text = '...';
-            % btn.ButtonPushedFcn = createCallbackFcn(true, @controller.connectToDbMenuButtonCallback, true);
+            btn.ButtonPushedFcn = createCallbackFcn(app, @controller.connectToDbButtonCallback, true);
 
             % Create DataSourceLabel
             data_source_label = uilabel(tab);
@@ -221,20 +222,20 @@ classdef OutputParametersView < matlab.apps.AppBase
             else
                 app.OutputPathEditField.Value = "";
             end
-            % todo: add callback for path validation
+            app.OutputPathEditField.ValueChangedFcn = createCallbackFcn(app, @controller.outputPathEditFieldValueChangedCallback, true);
 
             % Create OpenFileBrowserButton
             btn = uibutton(tab, 'push');
             btn.Position = [255 136 30 20];
             btn.Text = '...';
-            % todo: add callback
+            btn.ButtonPushedFcn = createCallbackFcn(app, @controller.openFileBrowserButtonButtonPushedCallback, true);
 
             % Create CheckBox
             app.OutputAsCsvCheckBox = uicheckbox(tab);
             app.OutputAsCsvCheckBox.Text = '';
             app.OutputAsCsvCheckBox.Position = [120 97 26 22];
             app.OutputAsCsvCheckBox.Value = controller.OutputParametersModel.OutputAsCsv;
-            % todo: add callback
+            app.OutputAsCsvCheckBox.ValueChangedFcn = createCallbackFcn(app, @controller.outputAsCsvCheckBoxValueChangedCallback, true);
 
             % Create OutputAsCsvLabel
             output_as_csv_label = uilabel(tab);
@@ -249,15 +250,13 @@ classdef OutputParametersView < matlab.apps.AppBase
             output_path_label.Text = 'Output Path';        
         end
         
-        function createOkButton(app)
+        function createOkButton(app, controller)
             btn = uibutton(app.UIFigure, 'push');
             btn.Position = [100 11 100 30];
             btn.Text = 'Ok';
-            % todo: set callback
+            btn.ButtonPushedFcn = createCallbackFcn(app, @controller.okButtonPushedCallback, true);
         end
 
-        
     end
-
     
 end
