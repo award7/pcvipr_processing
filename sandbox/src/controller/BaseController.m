@@ -705,12 +705,32 @@ classdef BaseController < handle
         end
         
         function okButtonPushedCallback(self, src, evt)
-            % todo: assign values from fields to associated model props
-            % self.OutputParametersModel.setDataSourceName(src.DataSourceEditField.Value);
-            % self.OutputParametersModel.setDatabaseName(src.DatabaseEditField.Value);
+            self.OutputParametersModel.setStudy(src.StudyEditField.Value);
+            self.OutputParametersModel.setSubject(src.SubjectEditField.Value);
+            self.OutputParametersModel.setConditionOrVisit(src.ConditionVisitEditField.Value);
+            self.OutputParametersModel.setTimePoint(src.TimePointEditField.Value);
             self.OutputParametersModel.setDatabaseTable(src.TableDropDown.Value);
-            self.OutputParametersModel.setOutputAsCsv(logical(src.OutputAsCsvCheckBox));
-            self.OutputParametersModel.setOutputPath(src.OutputPathEditField.Value);
+            self.OutputParametersModel.setOutputAsCsv(logical(src.OutputAsCsvCheckBox.Value));
+            
+            try
+                self.OutputParametersModel.setOutputPath(src.OutputPathEditField.Value);
+            catch me
+                switch me.identifier
+                    case 'MATLAB:validators:mustBeFolder'
+                        msg = sprintf("Invalid path: %s", src.OutputPathEditField.Value);
+                        uialert(src.UIFigure,...
+                            msg,...
+                            'Error',...
+                            'Icon', 'error',...
+                            'Modal', true);
+                        return;
+                    case 'MATLAB:validators:mustBeNonzeroLengthText'
+                        % do nothing if no path is given
+                    otherwise
+                        rethrow(me);
+                end
+            end
+            src.delete();
         end
 
     end
