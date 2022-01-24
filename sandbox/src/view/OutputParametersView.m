@@ -65,7 +65,7 @@ classdef OutputParametersView < matlab.apps.AppBase
 
         function createComponents(app, controller)
             app.createFigure(controller);
-            app.createTabGroup();
+            app.createTabGroup(controller);
             app.createOkButton();
             
             % Show the figure after all components are created
@@ -76,7 +76,7 @@ classdef OutputParametersView < matlab.apps.AppBase
             app.UIFigure = uifigure('Visible', 'off');
             
             % center figure
-            parent_dims = controller.View.UIFigure.Position;
+            parent_dims = controller.BaseView.UIFigure.Position;
             parent_relative = true;
             child_dims = [300 250];
             child_relative = false;
@@ -91,34 +91,38 @@ classdef OutputParametersView < matlab.apps.AppBase
             % todo: set callbacks
         end
         
-        function createTabGroup(app)
+        function createTabGroup(app, controller)
             tab_group = uitabgroup(app.UIFigure);
             tab_group.Position = [2 51 300 200];
             
-            app.createSubjectDetailsTab(tab_group);
-            app.createDatabaseTab(tab_group);
-            app.createDataOutputTab(tab_group);
+            app.createSubjectDetailsTab(tab_group, controller);
+            app.createDatabaseTab(tab_group, controller);
+            app.createDataOutputTab(tab_group, controller);
         end
         
-        function createSubjectDetailsTab(app, tab_group)
+        function createSubjectDetailsTab(app, tab_group, controller)
             tab = uitab(tab_group);
             tab.Title = 'Subject Details';
 
             % Create StudyEditField
             app.StudyEditField = uieditfield(tab, 'text');
             app.StudyEditField.Position = [120 136 120 20];
+            app.StudyEditField.Value = controller.OutputParametersModel.Study;
 
             % Create SubjectEditField
             app.SubjectEditField = uieditfield(tab, 'text');
             app.SubjectEditField.Position = [120 97 120 20];
+            app.SubjectEditField.Value = controller.OutputParametersModel.Subject;
 
             % Create ConditionVisitEditField
             app.ConditionVisitEditField = uieditfield(tab, 'text');
             app.ConditionVisitEditField.Position = [120 58 120 20];
+            app.ConditionVisitEditField.Value = controller.OutputParametersModel.ConditionOrVisit;
 
             % Create TimePointEditField
             app.TimePointEditField = uieditfield(tab, 'text');
             app.TimePointEditField.Position = [120 19 120 20];
+            app.TimePointEditField.Value = controller.OutputParametersModel.TimePoint;
 
             % Create SubjectLabel
             subject_label = uilabel(tab);
@@ -145,7 +149,7 @@ classdef OutputParametersView < matlab.apps.AppBase
             time_point_label.Text = 'Time Point';
         end
         
-        function createDatabaseTab(app, tab_group)
+        function createDatabaseTab(app, tab_group, controller)
             % Create DatabaseTab
             tab = uitab(tab_group);
             tab.Title = 'Database';
@@ -153,23 +157,37 @@ classdef OutputParametersView < matlab.apps.AppBase
             % Create DataSourceEditField
             app.DataSourceEditField = uieditfield(tab, 'text');
             app.DataSourceEditField.Position = [120 136 120 20];
-            % todo: change to dropdown??
+            if ~isempty(controller.OutputParametersModel.DataSourceName)
+                app.DataSourceEditField.Value = controller.OutputParametersModel.DataSourceName;
+            else
+                app.DataSourceEditField.Value = "";
+            end
 
             % Create DatabaseEditField
+            % todo: change to dropdown?? Or a disabled edit field??
             app.DatabaseEditField = uieditfield(tab, 'text');
             app.DatabaseEditField.Position = [120 97 120 20];
-            % todo: change to dropdown?? Or a disabled edit field??
+            if ~isempty(controller.OutputParametersModel.DataSourceName)
+                app.DatabaseEditField.Value = controller.OutputParametersModel.DatabaseName;
+            else
+                app.DatabaseEditField.Value = "";
+            end
 
             % Create TableDropDown
+            % todo: execute a sql query to get all table names in datasource
             app.TableDropDown = uidropdown(tab);
             app.TableDropDown.Position = [120 58 120 20];
-            % todo: execute a sql query to get all table names in datasource
-
+            if ~isempty(controller.OutputParametersModel.DataSourceName)
+                app.TableDropDown.Items = controller.OutputParametersModel.DatabaseTables;
+            else
+                app.TableDropDown.Items = [""];
+            end
+            
             % Create ConnectToDatabaseButton
             btn = uibutton(tab, 'push');
             btn.Position = [255 136 30 20];
             btn.Text = '...';
-%             btn.ButtonPushedFcn = createCallbackFcn(true, @controller.connectToDbMenuButtonCallback, true);
+            % btn.ButtonPushedFcn = createCallbackFcn(true, @controller.connectToDbMenuButtonCallback, true);
 
             % Create DataSourceLabel
             data_source_label = uilabel(tab);
@@ -188,11 +206,9 @@ classdef OutputParametersView < matlab.apps.AppBase
             table_label.HorizontalAlignment = 'right';
             table_label.Position = [30 58 80 20];
             table_label.Text = 'Table';
-
-
         end
         
-        function createDataOutputTab(app, tab_group)
+        function createDataOutputTab(app, tab_group, controller)
            % Create DataOutputTab
             tab = uitab(tab_group);
             tab.Title = 'Data Output';
@@ -200,6 +216,11 @@ classdef OutputParametersView < matlab.apps.AppBase
             % Create OutputPathEditField
             app.OutputPathEditField = uieditfield(tab, 'text');
             app.OutputPathEditField.Position = [120 136 120 20];
+            if ~isempty(controller.OutputParametersModel.OutputPath)
+                app.OutputPathEditField.Value = controller.OutputParametersModel.OutputPath;
+            else
+                app.OutputPathEditField.Value = "";
+            end
             % todo: add callback for path validation
 
             % Create OpenFileBrowserButton
@@ -212,6 +233,7 @@ classdef OutputParametersView < matlab.apps.AppBase
             app.OutputAsCsvCheckBox = uicheckbox(tab);
             app.OutputAsCsvCheckBox.Text = '';
             app.OutputAsCsvCheckBox.Position = [120 97 26 22];
+            app.OutputAsCsvCheckBox.Value = controller.OutputParametersModel.OutputAsCsv;
             % todo: add callback
 
             % Create OutputAsCsvLabel
