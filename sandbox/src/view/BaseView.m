@@ -20,13 +20,13 @@ classdef BaseView < matlab.apps.AppBase
     end
     
     % file menu bar properties
-    properties (Access = private)
+    properties (Access = ?BaseController)
         FileMenu            matlab.ui.container.Menu;
         ExitMenuButton      matlab.ui.container.Menu;
     end
     
     % analysis menu bar properties
-    properties (Access = private)
+    properties (Access = ?BaseController)
         AnalysisMenu                            matlab.ui.container.Menu;
         ViewFullVasculatureMenuButton           matlab.ui.container.Menu;
         BackgroundPhaseCorrectionMenuButton     matlab.ui.container.Menu;
@@ -40,18 +40,17 @@ classdef BaseView < matlab.apps.AppBase
     end
     
     % data source menu bar properties
-    properties (Access = private)
-        LoadDataMenuButton                  matlab.ui.container.Menu;
+    properties (Access = ?BaseController)
         DataSourceMenu                      matlab.ui.container.Menu;
+        LoadDataMenuButton                  matlab.ui.container.Menu;
         ConnectToDbMenuButton               matlab.ui.container.Menu;
         OpenDatabaseExplorerMenuButton      matlab.ui.container.Menu;
         TestDbConnectionMenuButton          matlab.ui.container.Menu;
-        SetDataOutputPathMenuButton         matlab.ui.container.Menu;
         SetDataOutputParametersMenuButton   matlab.ui.container.Menu;
     end
 
     % app creation
-    methods (Access = public)
+    methods (Access = ?BaseController)
         
         function app = BaseView(controller)
             app.createBaseFigure(controller);
@@ -81,6 +80,7 @@ classdef BaseView < matlab.apps.AppBase
             app.createBackgroundPhaseCorrectionMenuButton(controller);
             app.createDrawROIMenuButton(controller);
             app.createViewParametricMapMenuButton(controller);
+            app.createFeatureExtracctionMenuButton(controller);
             app.createVesselSelectionMenuButton(controller);
             app.createSegmentVesselsMenuButton(controller);
             app.createVessel3dMenuButton(controller);
@@ -93,14 +93,12 @@ classdef BaseView < matlab.apps.AppBase
             app.createTestDbConnectionMenuButton(controller);
             app.createOpenDatabaseExplorerMenuButton(controller);
             app.createSetDataOutputParametersMenuButton(controller);
-            app.createSetDataOutputPathMenuButton(controller);
             
             % make figure visible after object creation
             app.UIFigure.Visible = 'on';
         end
         
         function createFigure(app, controller)
-            % todo: add title, size, position
             app.UIFigure = uifigure('Name', 'PC VIPR Processing', ...
                                     'Units', 'Normalized', ...
                                     'Position', [1/4 1/4 1/2 1/2], ...
@@ -151,6 +149,12 @@ classdef BaseView < matlab.apps.AppBase
             app.ViewParametricMapMenuButton = uimenu(app.AnalysisMenu);
             app.ViewParametricMapMenuButton.Text = 'View Parametric Map';
             app.ViewParametricMapMenuButton.MenuSelectedFcn = createCallbackFcn(app, @controller.viewParametricMapMenuButtonCallback, true);
+        end
+        
+        function createFeatureExtracctionMenuButton(app, controller)
+            app.FeatureExtractionMenuButton = uimenu(app.AnalysisMenu);
+            app.FeatureExtractionMenuButton.Text = 'Feature Extraction';
+            app.FeatureExtractionMenuButton.MenuSelectedFcn = createCallbackFcn(app, @controller.featureExtractionMenuButtonCallback, true);
         end
         
         function createVesselSelectionMenuButton(app, controller)
@@ -216,28 +220,7 @@ classdef BaseView < matlab.apps.AppBase
             app.SetDataOutputParametersMenuButton.Separator = 'on';
             app.SetDataOutputParametersMenuButton.MenuSelectedFcn = createCallbackFcn(app, @controller.setDataOutputParametersMenuCallback, true);
         end
-        
-        function createSetDataOutputPathMenuButton(app, controller)
-            app.SetDataOutputPathMenuButton = uimenu(app.DataSourceMenu);
-            app.SetDataOutputPathMenuButton.Text = 'Set Data Output Path';
-            app.SetDataOutputPathMenuButton.MenuSelectedFcn = createCallbackFcn(app, @controller.setDataOutputPathMenuButtonCallback, true);
-        end
 
     end
-
-    % change button state methods
-    methods (Access = public)
-        
-        function setButtonState(app, button, state)
-            arguments
-                app;
-                button {mustBeTextScalar};
-                state {mustBeUnderlyingType(state, 'ButtonState')};
-            end
-            
-            app.(button).Enable = char(state);
-        end
-        
-    end 
     
 end
