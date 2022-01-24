@@ -23,7 +23,7 @@ classdef OutputParametersView < matlab.apps.AppBase
     % fields in database tab
     properties
         DataSourceEditField       matlab.ui.control.EditField;
-        DatabaseEditField         matlab.ui.control.EditField;
+        DatabaseDropDown          matlab.ui.control.DropDown;
         TableDropDown             matlab.ui.control.DropDown;
         ConnectToDatabaseButton   matlab.ui.control.Button;
     end
@@ -158,28 +158,26 @@ classdef OutputParametersView < matlab.apps.AppBase
             app.DataSourceEditField = uieditfield(tab, 'text');
             app.DataSourceEditField.Position = [120 136 120 20];
             app.DataSourceEditField.Editable = false;
-            if ~isempty(controller.OutputParametersModel.DataSourceName)
-                app.DataSourceEditField.Value = controller.OutputParametersModel.DataSourceName;
+            if ~isempty(controller.OutputParametersModel.DatabaseConnection)
+                app.DataSourceEditField.Value = controller.OutputParametersModel.DatabaseConnection.DataSource;
             else
                 app.DataSourceEditField.Value = "";
             end
 
-            % Create DatabaseEditField
-            % todo: change to dropdown??
-            app.DatabaseEditField = uieditfield(tab, 'text');
-            app.DatabaseEditField.Position = [120 97 120 20];
-            if ~isempty(controller.OutputParametersModel.DataSourceName)
-                app.DatabaseEditField.Value = controller.OutputParametersModel.DatabaseName;
+            % Create DatabaseDropDown
+            app.DatabaseDropDown = uidropdown(tab);
+            app.DatabaseDropDown.Position = [120 97 120 20];
+            if ~isempty(controller.OutputParametersModel.DatabaseConnection)
+                app.DatabaseDropDown.Items = controller.OutputParametersModel.DatabaseList;
             else
-                app.DatabaseEditField.Value = "";
+                app.DatabaseDropDown.Items = {''};
             end
 
             % Create TableDropDown
-            % todo: execute a sql query to get all table names in datasource
             app.TableDropDown = uidropdown(tab);
             app.TableDropDown.Position = [120 58 120 20];
-            if ~isempty(controller.OutputParametersModel.DataSourceName)
-                app.TableDropDown.Items = controller.OutputParametersModel.DatabaseTable;
+            if ~isempty(controller.OutputParametersModel.DatabaseConnection)
+                app.TableDropDown.Items = controller.OutputParametersModel.TableList;
             else
                 app.TableDropDown.Items = [""];
             end
