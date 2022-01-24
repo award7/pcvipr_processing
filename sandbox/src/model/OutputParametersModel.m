@@ -1,22 +1,41 @@
 classdef OutputParametersModel < handle
     
     properties (GetAccess = public, SetAccess = private)
-        Study = "";
-        Subject = "";
-        ConditionOrVisit = "";
-        TimePoint = "";
-        DataSourceName = "";
-        DatabaseName = "";
-        DatabaseTable = "";
+        Study;
+        Subject;
+        ConditionOrVisit;
+        TimePoint;
+        DataSourceName;
+        DatabaseName;
+        DatabaseTable;
         OutputAsCsv = true;
-        OutputPath = "";
+        OutputPath;
         DatabaseConnection;
+    end
+    
+    properties (Access = public, Dependent)
+        DatabaseList;
+        TableList;
     end
     
     % constructor
     methods (Access = public)
         
         function self = OutputParametersModel()
+        end
+        
+    end
+    
+    % getters
+    methods
+        
+        function val = get.DatabaseList(self)
+            val = self.DatabaseConnection.Catalogs;
+        end
+        
+        function val = get.TableList(self)
+            sql = sprintf("SELECT TABLE_NAME FROM %s.INFORMATION_SCHEMA.TABLES ORDER BY TABLE_NAME;", self.DatabaseConnection.DefaultCatalog);
+            val = self.DatabaseConnection.fetch(sql);
         end
         
     end
@@ -99,8 +118,10 @@ classdef OutputParametersModel < handle
         function setDatabaseConnection(self, val)
             arguments
                 self;
-                val (1,1) {mustBeA(val, 'database')};
+                val (1,1);
             end
+            % TODO: add validation
+            
             self.DatabaseConnection = val;
         end
         
