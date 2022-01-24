@@ -46,6 +46,7 @@ classdef BaseView < matlab.apps.AppBase
         ConnectToDbMenuButton               matlab.ui.container.Menu;
         OpenDatabaseExplorerMenuButton      matlab.ui.container.Menu;
         TestDbConnectionMenuButton          matlab.ui.container.Menu;
+        DisconnectDbMenuButton              matlab.ui.container.Menu;
         SetDataOutputParametersMenuButton   matlab.ui.container.Menu;
     end
 
@@ -92,6 +93,7 @@ classdef BaseView < matlab.apps.AppBase
             app.createConnectToDbMenuButton(controller);
             app.createTestDbConnectionMenuButton(controller);
             app.createOpenDatabaseExplorerMenuButton(controller);
+            app.createDisconnectDbMenuButton(controller);
             app.createSetDataOutputParametersMenuButton(controller);
             
             % make figure visible after object creation
@@ -212,6 +214,12 @@ classdef BaseView < matlab.apps.AppBase
             
             args_array = namedargs2cell(args);
             app.OpenDatabaseExplorerMenuButton = uimenu(app.DataSourceMenu, args_array{:});
+        end
+        
+        function createDisconnectDbMenuButton(app, controller)
+            app.DisconnectDbMenuButton = uimenu(app.DataSourceMenu);
+            app.DisconnectDbMenuButton.Text = 'Disconnect from Database';
+            app.DisconnectDbMenuButton.MenuSelectedFcn = createCallbackFcn(app, @controller.disconnectDbMenuButtonCallback, true);
         end
         
         function createSetDataOutputParametersMenuButton(app, controller)
