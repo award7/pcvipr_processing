@@ -668,17 +668,17 @@ classdef BaseController < handle
             % validate that input is a folder
             % if not, throw error dialog on view
             try
-                mustBeFolder(evt.Value);
+                self.OutputParametersModel.setOutputPath(evt.Value);
             catch me
                 switch me.identifier
-                    case 'MATLAB:validators:mustBeFolder'
+                    case {'MATLAB:validators:mustBeFolder', 'MATLAB:validators:mustBeNonzeroLengthText'}
+                        msg = sprintf("The following folders do not exist: %s", evt.Value);
                         uialert(src.UIFigure, ...
-                            me.message, ...        
+                            msg, ...
                             'PC VIPR Processing', ...
                             'Icon', 'error', ...
                             'Modal', true);
                         src.OutputPathEditField.Value = evt.PreviousValue;
-                        self.OutputParametersModel.setOutputPath(evt.PreviousValue);
                 end
             end
         end
@@ -717,31 +717,31 @@ classdef BaseController < handle
         end
         
         function okButtonPushedCallback(self, src, evt)
+            if src.OutputAsCsvCheckBox.Value
+                try
+                    self.OutputParametersModel.setOutputPath(src.OutputPathEditField.Value);
+                catch me
+                    switch me.identifier
+                        case {'MATLAB:validators:mustBeFolder', 'MATLAB:validators:mustBeNonzeroLengthText'}
+                            msg = sprintf("Invalid path: %s", src.OutputPathEditField.Value);
+                            uialert(src.UIFigure,...
+                                msg,...
+                                'Error',...
+                                'Icon', 'error',...
+                                'Modal', true);
+                            return;
+                        otherwise
+                            rethrow(me);
+                    end
+                end
+            end
+            
             self.OutputParametersModel.setStudy(src.StudyEditField.Value);
             self.OutputParametersModel.setSubject(src.SubjectEditField.Value);
             self.OutputParametersModel.setConditionOrVisit(src.ConditionVisitEditField.Value);
             self.OutputParametersModel.setTimePoint(src.TimePointEditField.Value);
             self.OutputParametersModel.setDatabaseTable(src.TableDropDown.Value);
             self.OutputParametersModel.setOutputAsCsv(logical(src.OutputAsCsvCheckBox.Value));
-            
-            try
-                self.OutputParametersModel.setOutputPath(src.OutputPathEditField.Value);
-            catch me
-                switch me.identifier
-                    case 'MATLAB:validators:mustBeFolder'
-                        msg = sprintf("Invalid path: %s", src.OutputPathEditField.Value);
-                        uialert(src.UIFigure,...
-                            msg,...
-                            'Error',...
-                            'Icon', 'error',...
-                            'Modal', true);
-                        return;
-                    case 'MATLAB:validators:mustBeNonzeroLengthText'
-                        % do nothing if no path is given
-                    otherwise
-                        rethrow(me);
-                end
-            end
             src.delete();
         end
 
