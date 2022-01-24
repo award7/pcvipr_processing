@@ -6,7 +6,6 @@ classdef OutputParametersModel < handle
         ConditionOrVisit;
         TimePoint;
         DatabaseConnection;
-        DatabaseName;
         DatabaseTable;
         OutputAsCsv = true;
         OutputPath;
@@ -14,7 +13,7 @@ classdef OutputParametersModel < handle
     
     properties (Access = public, Dependent)
         DataSourceName;
-        DatabaseList;
+        DatabaseName;
         TableList;
     end
     
@@ -33,8 +32,8 @@ classdef OutputParametersModel < handle
             val = self.DatabaseConnection.DataSource;
         end
         
-        function val = get.DatabaseList(self)
-            val = self.DatabaseConnection.Catalogs;
+        function val = get.DatabaseName(self)
+            val = self.DatabaseConnection.DefaultCatalog;
         end
         
         function val = get.TableList(self)
@@ -78,27 +77,11 @@ classdef OutputParametersModel < handle
             end
             self.TimePoint = val;
         end
-        
-        function setDataSourceName(self, val)
-            arguments
-                self;
-                val {mustBeTextScalar};
-            end
-            self.DataSourceName = val;
-        end
-        
-        function setDatabaseName(self, val)
-            arguments
-                self;
-                val {mustBeTextScalar};
-            end
-            self.DatabaseName = val;
-        end
-        
+
         function setDatabaseTable(self, val)
             arguments
                 self;
-                val (1,1) {mustBeText};
+                val {mustBeTextScalar};
             end
             self.DatabaseTable = val;
         end
