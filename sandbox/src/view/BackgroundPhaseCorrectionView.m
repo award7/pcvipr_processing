@@ -13,20 +13,20 @@ classdef BackgroundPhaseCorrectionView < matlab.apps.AppBase
    
     % sliders
     properties
-        ImageSlider     matlab.ui.control.Slider
-        VmaxSlider      matlab.ui.control.Slider
-        CDSlider        matlab.ui.control.Slider
-        NoiseSlider     matlab.ui.control.Slider
-        FitOrderSlider  matlab.ui.control.Slider
+        ImageSlider                 matlab.ui.control.Slider
+        VmaxSlider                  matlab.ui.control.Slider
+        CDSlider                    matlab.ui.control.Slider
+        NoiseThresholdSlider        matlab.ui.control.Slider
+        FitOrderSlider              matlab.ui.control.Slider
     end
     
     % spinners
     properties 
-        ImageSpinner        matlab.ui.control.Spinner
-        VmaxSpinner         matlab.ui.control.Spinner
-        CDSpinner           matlab.ui.control.Spinner
-        NoiseSpinner        matlab.ui.control.Spinner
-        FitOrderSpinner     matlab.ui.control.Spinner
+        ImageSpinner            matlab.ui.control.Spinner
+        VmaxSpinner             matlab.ui.control.Spinner
+        CDSpinner               matlab.ui.control.Spinner
+        NoiseThresholdSpinner   matlab.ui.control.Spinner
+        FitOrderSpinner         matlab.ui.control.Spinner
     end
     
     % constructor
@@ -211,16 +211,16 @@ classdef BackgroundPhaseCorrectionView < matlab.apps.AppBase
         end
         
         function createNoiseSlider(app, controller, child_grid1)
-            app.NoiseSlider = uislider(child_grid1);
-            app.NoiseSlider.MajorTicks = [0:20:100];
-            app.NoiseSlider.MinorTicks = [5:5:100];
-            app.NoiseSlider.MajorTickLabels = string(0:0.2:1.0);
-            app.NoiseSlider.Layout.Row = 4;
-            app.NoiseSlider.Layout.Column = 2;
-            app.NoiseSlider.Value = controller.BackgroundPhaseCorrectionModel.NoiseThreshold * 100;
-            app.NoiseSlider.Limits = [0 100];
-            app.NoiseSlider.ValueChangedFcn = app.createCallbackFcn(@controller.bgpcNoiseThresholdValueChangedCallback, true);
-            app.NoiseSlider.ValueChangingFcn = app.createCallbackFcn(@controller.bgpcNoiseThresholdValueChangedCallback, true);
+            app.NoiseThresholdSlider = uislider(child_grid1);
+            app.NoiseThresholdSlider.MajorTicks = [0:20:100];
+            app.NoiseThresholdSlider.MinorTicks = [5:5:100];
+            app.NoiseThresholdSlider.MajorTickLabels = string(0:0.2:1.0);
+            app.NoiseThresholdSlider.Layout.Row = 4;
+            app.NoiseThresholdSlider.Layout.Column = 2;
+            app.NoiseThresholdSlider.Value = controller.BackgroundPhaseCorrectionModel.NoiseThreshold * 100;
+            app.NoiseThresholdSlider.Limits = [0 100];
+            app.NoiseThresholdSlider.ValueChangedFcn = app.createCallbackFcn(@controller.bgpcNoiseThresholdValueChangedCallback, true);
+            app.NoiseThresholdSlider.ValueChangingFcn = app.createCallbackFcn(@controller.bgpcNoiseThresholdValueChangedCallback, true);
         end
         
         function createImageSpinner(app, controller, child_grid1)
@@ -254,13 +254,13 @@ classdef BackgroundPhaseCorrectionView < matlab.apps.AppBase
         end
         
         function createNoiseSpinner(app, controller, child_grid1)
-            app.NoiseSpinner = uispinner(child_grid1);
-            app.NoiseSpinner.Layout.Row = 4;
-            app.NoiseSpinner.Layout.Column = 3;
-            app.NoiseSpinner.Limits = [0 1];
-            app.NoiseSpinner.Step = 0.01;
-            app.NoiseSpinner.Value = controller.BackgroundPhaseCorrectionModel.NoiseThreshold;
-            app.NoiseSpinner.ValueChangedFcn = app.createCallbackFcn(@controller.bgpcNoiseThresholdValueChangedCallback, true);
+            app.NoiseThresholdSpinner = uispinner(child_grid1);
+            app.NoiseThresholdSpinner.Layout.Row = 4;
+            app.NoiseThresholdSpinner.Layout.Column = 3;
+            app.NoiseThresholdSpinner.Limits = [0 1];
+            app.NoiseThresholdSpinner.Step = 0.01;
+            app.NoiseThresholdSpinner.Value = controller.BackgroundPhaseCorrectionModel.NoiseThreshold;
+            app.NoiseThresholdSpinner.ValueChangedFcn = app.createCallbackFcn(@controller.bgpcNoiseThresholdValueChangedCallback, true);
         end
         
         function createFitOrderSpinner(app, controller, child_grid1)
