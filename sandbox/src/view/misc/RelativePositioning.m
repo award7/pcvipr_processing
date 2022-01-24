@@ -57,9 +57,9 @@ classdef RelativePositioning < handle
             
             arguments
                 self;
-                parent_dims             (1,4) {mustBeVector, mustBePositive};
+                parent_dims             (1,4) {mustBeVector};
                 parent_relative         (1,1) {mustBeNumericOrLogical};
-                child_dims              (1,2) {mustBeNonempty, mustBePositive};
+                child_dims              (1,2) {mustBeNonempty};
                 child_relative          (1,1) {mustBeNumericOrLogical};
             end
             
@@ -77,30 +77,16 @@ classdef RelativePositioning < handle
             end
             
             % calculate left and bottom positions
-            %{
-            % 2022-01-22: I am clueless as to why the below formulas didn't work
-            % x = (width/2) + margin
-            % y = (height/2) + margin
-            % x_center_parent = (parent_dims(3)/2) + parent_dims(1);
-            % y_center_parent = (parent_dims(4)/2) + parent_dims(2);
+            x_center_parent = (parent_dims(3)/2) + parent_dims(1);
+            y_center_parent = (parent_dims(4)/2) + parent_dims(2);
             
-            % x_center_parent = x_center_child
-            % y_center_parent = y_center_child
+            % x_center_parent = x_center_child;
+            % y_center_parent = y_center_child;
             
-            % x = x_center - (width_child/2)
-            % y = y_center - (height_child/2)
-            % x = x_center_parent - (child_dims(1)/2);
-            % y = y_center_parent - (child_dims(2)/2);
-            %}
-            x = parent_dims(1);
-            y = parent_dims(2);
+            x = x_center_parent - (child_dims(1)/2);
+            y = y_center_parent - (child_dims(2)/2);
             
-            % do some validation
             coordinates = [x y child_dims(1) child_dims(2)];
-            if any(self.ScreenWidth < coordinates)
-                me = MException('RelativePositioning:OutOfRange', 'Calculated child figure coordinates exceed the screen dimensions');
-                throw(me);
-            end
         end
         
         function coordinates = centered_screen(self, obj_width, obj_height)
