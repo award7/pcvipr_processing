@@ -361,8 +361,22 @@ classdef BaseController < handle
                 return;
             end
             
+            % create output parameters model object if not already exists
+            self.createOutputParametersModelObject();
+            
             try
-                conn = database(data_sources(idx));
+                self.OutputParametersModel.DatabaseConnection.close
+            catch me
+                switch me.identifier
+                    case 'MATLAB:structRefFromNonStruct'
+                        % do nothing as the object doesn't exist
+                    otherwise
+                        rethrow(me);
+                end
+            end
+            
+            try
+                conn = database(data_sources(idx), "", "");
             catch ME
                 uialert(self.BaseView.UIFigure, ...
                         'Message', ME.message, ...
@@ -370,23 +384,25 @@ classdef BaseController < handle
                         'Modal', true);
                 return;
             end
-            self.BaseModel.DatabaseConnection = conn;
-            self.BaseView.setButtonState('TestDbConnectionMenuButton', ButtonState.on);
+            self.setButtonState(["TestDbConnectionMenuButton"], ButtonState.on);
+            self.OutputParametersModel.setDatabaseConnection(conn);
         end
         
         function testDbConnectionMenuButtonCallback(self, src, evt)
-            switch self.BaseModel.DatabaseConnection.isOpen()
+            switch self.OutputParametersModel.DatabaseConnection.isopen()
                 case 0
                     msg = "Connection is closed or invalid.";
                     icon = "warning";
                 case 1
-                    msg = "Connection is active";
+                    msg = sprintf("Connection is active:\n\n%s",...
+                        self.OutputParametersModel.DatabaseConnection.DataSource);
                     icon = "success";
             end
             
-            uialert(self.BaseView.UIFigure, ...
-                    'Message', msg, ...
-                    'Icon', icon, ...
+            uialert(self.BaseView.UIFigure,...
+                    msg,...
+                    'Database Connection',...
+                    'Icon', icon,...
                     'Modal', true);
         end
         
@@ -731,6 +747,14 @@ classdef BaseController < handle
             for i = 1:length(buttons)
                 self.BaseView.(buttons(i)).Enable = char(state);
             end
+        end
+        
+        function createOutputParametersModelObject(self)
+            % assign the OutputParametersModel object to the OutputParametersModel property of this class
+            if isempty(self.OutputParametersModel)
+                self.OutputParametersModel = OutputParametersModel();
+            end
+            
         end
         
     end
