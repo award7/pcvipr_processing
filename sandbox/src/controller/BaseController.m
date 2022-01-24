@@ -365,7 +365,8 @@ classdef BaseController < handle
             self.createOutputParametersModelObject();
             
             try
-                self.OutputParametersModel.DatabaseConnection.close
+                self.OutputParametersModel.DatabaseConnection.close;
+                self.OutputParametersModel.setDatabaseConnection({''});
             catch me
                 switch me.identifier
                     case 'MATLAB:structRefFromNonStruct'
@@ -384,14 +385,17 @@ classdef BaseController < handle
                         'Modal', true);
                 return;
             end
-            self.setButtonState(["TestDbConnectionMenuButton"], ButtonState.on);
+            
+            buttons = ["SetDataOutputParametersMenuButton",...
+                "TestDbConnectionMenuButton"];
+            self.setButtonState(buttons, ButtonState.on);
             self.OutputParametersModel.setDatabaseConnection(conn);
         end
         
         function testDbConnectionMenuButtonCallback(self, src, evt)
             switch self.OutputParametersModel.DatabaseConnection.isopen()
                 case 0
-                    msg = "Connection is closed or invalid.";
+                    msg = "Connection is closed or invalid";
                     icon = "warning";
                 case 1
                     msg = sprintf("Connection is active:\n\n%s",...
@@ -694,9 +698,10 @@ classdef BaseController < handle
         end
         
         function connectToDbButtonCallback(self, src, evt)
-            % TODO: after calling the connectToDb view and selecting datasource,
-            % update the database fields in view
             self.connectToDbMenuButtonCallback(src, evt);
+            src.DataSourceEditField.Value = self.OutputParametersModel.DatabaseConnection.DataSource;
+            src.DatabaseDropDown.Items = self.OutputParametersModel.DatabaseList;
+            src.TableDropDown.Items = self.OutputParametersModel.TableList;
         end
         
         function okButtonPushedCallback(self, src, evt)
