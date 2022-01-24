@@ -1,15 +1,15 @@
 classdef OutputParametersModel < handle
     
     properties (GetAccess = public, SetAccess = private)
-        Study;
-        Subject;
-        ConditionOrVisit;
-        TimePoint;
-        DataSourceName;
-        DatabaseName;
-        DatabaseTables;
-        OutputAsCsv;
-        OutputPath;
+        Study = "";
+        Subject = "";
+        ConditionOrVisit = "";
+        TimePoint = "";
+        DataSourceName = "";
+        DatabaseName = "";
+        DatabaseTables = "";
+        OutputAsCsv = true;
+        OutputPath = "";
         DatabaseConnection;
     end
     
