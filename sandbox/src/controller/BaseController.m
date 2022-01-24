@@ -27,6 +27,7 @@ classdef BaseController < handle
         BaseModel;
         ViprModel;
         BackgroundPhaseCorrectionModel;
+        OutputParametersModel;
     end
     
     properties (Access = private)
@@ -41,7 +42,22 @@ classdef BaseController < handle
             fprintf('Loading PC VIPR Processing...');
             
             self.BaseView = BaseView(self);
-            self.BaseView.setButtonState('TestDbConnectionMenuButton', ButtonState.off); 
+            
+            buttons = string([...
+                "ViewFullVasculatureMenuButton", ...
+                "BackgroundPhaseCorrectionMenuButton", ...
+                "DrawROIMenuButton", ...
+                "ViewParametricMapMenuButton", ...
+                "FeatureExtractionMenuButton", ...
+                "VesselSelectionMenuButton", ...
+                "SegmentVesselsMenuButton", ...
+                "Vessel3dMenuButton", ...
+                "ParameterPlotMenuButton", ...
+                "TestDbConnectionMenuButton", ...
+                "SetDataOutputParametersMenuButton"
+                ]);
+            self.setButtonState(buttons, ButtonState.off);
+            
             self.BaseModel = BaseModel();
             
             pause(3);
@@ -85,12 +101,12 @@ classdef BaseController < handle
     % callbacks from menu
     methods (Access = ?BaseView)
         
-        % file menu
+        %%% file menu
         function exitMenuButtonCallback(self, ~, ~)
             self.delete();
         end
         
-        % analysis menu
+        %%% analysis menu
         function viewFullVasculatureMenuButtonCallback(self, src, evt)
             % display full vasculature
             % don't reload if it's currently in this state
@@ -150,6 +166,10 @@ classdef BaseController < handle
         function viewParametricMapMenuButtonCallback(self, src, evt)
             % todo: show error dialog 'Not Implemented'
             return;
+        end
+        
+        function featureExtractionMenuButtonCallback(self, src, evt)
+            
         end
         
         function vesselSelectionMenuButtonCallback(self, src, evt)
@@ -220,8 +240,11 @@ classdef BaseController < handle
             self.State = AppState.ParameterPlot;
         end
         
-        % datasource menu
+        %%% datasource menu
         function loadDataMenuButtonCallback(self, src, evt)
+            % todo: add functionality to check for previous analysis and load that
+            
+            %%% create ViprModel, if needed, and open file selector
             if isempty(self.ViprModel)
                 % assign the ViprModel object to the ViprModel property of this class
                 self.ViprModel = ViprModel();
@@ -240,32 +263,83 @@ classdef BaseController < handle
                 return;
             end
             
-            % create progress bar for enhancing UX
+            %%% create progress bar for enhancing UX
             msg = 'Loading VIPR Files';
             ProgressBarView(self.BaseView.UIFigure, ...
                             'Message', msg, ...
                             'Indeterminate', 'on', ...
                             'Cancelable', 'on');
              
-            % load VIPR files into file datastores
+            %%% load VIPR files into file datastores
             velocity_fs = LoadViprDS.getVelocityFileDataStore(data_directory);
-            self.ViprModel.setVelocityFS(velocity_fs);
-            
             velocity_mean_fs = LoadViprDS.getVelocityMeanFileDataStore(data_directory);
-            self.ViprModel.setVelocityMeanFS(velocity_mean_fs);
-            
             mag_fs = LoadViprDS.getMagFileDataStore(data_directory);
-            self.ViprModel.setMagFS(mag_fs);
-            
-            % get vipr parameters for processing and assign to model properties
-            self.ViprModel.setDataDirectory(data_directory);
             vipr_struct = LoadViprDS.parseArray(data_directory);
+            
+            %%% parse data directory to derive some props for OutputParametersModel
+            % assumes the data lives in a hierarchy of /{root}/study/subject/visit/timepoint/dat
+            % works back from dat
+            folders = strsplit(data_directory, filesep);
+            
+            % rm empty element due to ending file separator
+            folders(folders == "") = [];
+            
+            if strcmp(folders(end), 'dat')
+                timepoint = string(folders(end-1));
+                visit = string(folders(end-2));
+                subject = string(folders(end-3));
+                study = string(folders(end-4));
+            end
+            
+            %%% make analysis directory in the data directory
+            % if failed, notify and return as it's a catstrophic failure that 
+            % will prevent saving analysis which is critical for downstream
+            % processing
+            [success, msg, ~] = mkdir(data_directory, 'analysis');
+            if ~success
+                uialert(self.BaseView.UIFigure, ...
+                        msg, ...
+                        'PC VIPR Processing', ...
+                        'Icon', 'error', ...
+                        'Modal', true);
+                return;
+            end
+            
+            if isempty(self.OutputParametersModel)
+                % assign the OutputParametersModel object to the OutputParametersModel property of this class
+                self.OutputParametersModel = OutputParametersModel();
+            end
+            
+            %%% set model values
+            self.ViprModel.setDataDirectory(data_directory);
+            self.ViprModel.setVelocityFS(velocity_fs);
+            self.ViprModel.setVelocityMeanFS(velocity_mean_fs);
+            self.ViprModel.setMagFS(mag_fs);
             self.ViprModel.setFOV(vipr_struct.fovx/10);
             self.ViprModel.setTimeResolution(vipr_struct.timeres);
             self.ViprModel.setNoFrames(vipr_struct.frames);
             self.ViprModel.setResolution(vipr_struct.matrixx);
             self.ViprModel.setVelocityEncoding(vipr_struct.VENC);
             self.ViprModel.setScanParameters(vipr_struct);
+            
+            self.OutputParametersModel.setOutputPath(fullfile(data_directory, 'analysis'));
+            self.OutputParametersModel.setStudy(study);
+            self.OutputParametersModel.setSubject(subject);
+            self.OutputParametersModel.setConditionOrVisit(visit);
+            self.OutputParametersModel.setTimePoint(timepoint);
+            
+            %%% finish up
+            % enable buttons
+            buttons = [...
+                "SetDataOutputParametersMenuButton", ...
+                "ViewFullVasculatureMenuButton", ...
+                "BackgroundPhaseCorrectionMenuButton", ...
+                "DrawROIMenuButton", ...
+                "ViewParametricMapMenuButton", ...
+                "FeatureExtractionMenuButton", ...
+                "VesselSelectionMenuButton", ...
+                ];
+            self.setButtonState(buttons, ButtonState.on);
         end
         
         function connectToDbMenuButtonCallback(self, src, evt)
@@ -321,11 +395,11 @@ classdef BaseController < handle
         end
         
         function setDataOutputParametersMenuCallback(self, src, evt)
-%             ProgressBarView(self.BaseView.UIFigure, ...
-%                             'Message', 'Opening Output Parameters', ...
-%                             'Indeterminate', 'on', ...
-%                             'Cancelable', 'off', ...
-%                             'Pause', 'off');
+            ProgressBarView(self.BaseView.UIFigure, ...
+                            'Message', 'Opening Output Parameters', ...
+                            'Indeterminate', 'on', ...
+                            'Cancelable', 'off', ...
+                            'Pause', 'off');
             OutputParametersView(self);
         end
         
@@ -514,6 +588,14 @@ classdef BaseController < handle
         
     end
     
+    % callbacks from OutputParametersView
+    methods (Access = ?OutputParametersView)
+        
+        function so()
+        end
+        
+    end
+    
     % bgpc methods
     methods (Access = private)
         
@@ -521,6 +603,23 @@ classdef BaseController < handle
             [mag_slice, velocity_slice] = app.get_slices(app.CenterlineToolApp.VIPR);
             app.MagImage.CData = mag_slice;
             app.VelocityImage.CData = velocity_slice;
+        end
+        
+    end
+    
+    % helper methods
+    methods (Access = private)
+        
+        function setButtonState(self, buttons, state)
+            arguments
+                self;
+                buttons (1,:) {mustBeText, mustBeNonempty};
+                state   (1,1) {mustBeUnderlyingType(state, 'ButtonState')};
+            end
+            
+            for i = 1:length(buttons)
+                self.BaseView.(buttons(i)).Enable = char(state);
+            end
         end
         
     end
