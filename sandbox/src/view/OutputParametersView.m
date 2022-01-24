@@ -23,7 +23,7 @@ classdef OutputParametersView < matlab.apps.AppBase
     % fields in database tab
     properties (GetAccess = public, SetAccess = {?BaseController, ?OutputParametersView})
         DataSourceEditField       matlab.ui.control.EditField;
-        DatabaseDropDown          matlab.ui.control.DropDown;
+        DatabaseEditField         matlab.ui.control.EditField;
         TableDropDown             matlab.ui.control.DropDown;
         ConnectToDatabaseButton   matlab.ui.control.Button;
     end
@@ -182,13 +182,14 @@ classdef OutputParametersView < matlab.apps.AppBase
                 app.DataSourceEditField.Value = "";
             end
 
-            % Create DatabaseDropDown
-            app.DatabaseDropDown = uidropdown(tab);
-            app.DatabaseDropDown.Position = [120 97 120 20];
+            % Create DatabaseEditField
+            app.DatabaseEditField = uieditfield(tab, 'text');
+            app.DatabaseEditField.Position = [120 97 120 20];
+            app.DatabaseEditField.Editable = false;
             if ~isempty(controller.OutputParametersModel.DatabaseConnection)
-                app.DatabaseDropDown.Items = controller.OutputParametersModel.DatabaseList;
+                app.DatabaseEditField.Value = controller.OutputParametersModel.DatabaseName;
             else
-                app.DatabaseDropDown.Items = {''};
+                app.DatabaseEditField.Value = '';
             end
 
             % Create TableDropDown
