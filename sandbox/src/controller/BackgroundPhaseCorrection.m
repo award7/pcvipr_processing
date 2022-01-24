@@ -5,74 +5,154 @@ classdef BackgroundPhaseCorrection < handle
         % camelCase for methods
         % snake_case for local variables
     % TODO: add validations to properties   
-    
-%     properties (Access = protected)
-%         Image;
-%         Vmax;
-%         CDThreshold;
-%         NoiseThreshold;
-%         FitOrder;
-%         ApplyCorrection;
-%         VX;
-% 		VY;
-% 		VZ;
-%         PolyFitX = struct;
-%         PolyFitY = struct;
-%         PolyFitZ = struct;
-%     end
-%     
-%     % constructor
-%     methods (Access = public)
-% 
-%         function self = BackgroundPhaseCorrection()
-%             self.Image = 0.5;
-%             self.Vmax = 0.1;
-%             self.CDThreshold = 0.15;
-%             self.NoiseThreshold = 0.15;
-%             self.FitOrder = 2;
-%             self.ApplyCorrection = 1;
-%             self.reset_fit();
-%         end
-%         
-%     end
-    
-    methods (Static)
+   
+    methods (Access = ?BaseController, Static)
         
-        function mask = createAngiogram(MAG, vx, vy, vz, velocity_encoding, noise_threshold, cd_threshold)
-            mask = int8(zeros(size(MAG)));
-            max_MAG = max(MAG(:));
+        function [mag_slice, vel_mag] = getSlices(args)
+            arguments
+                args.vmax;
+                args.noise_threshold;
+                args.MAG; % pass in the fs?
+                args.image;
+                args.velocity_mean; % pass in the fs?
+                args.apply_correction;
+                args.poly_fit_x;
+                args.poly_fit_y;
+                args.poly_fit_z;
+                args.cd_threshold;
+                args.velocity_encoding;
+            end
+            
+            rczres = size(args.MAG, 3);
+            slice = 1 + floor(args.image * (rczres-1));
+            
+            % Get magnitude
+            vx_slice = single(args.velocity_mean(:,:,slice));
+            vy_slice = single(args.velocity_mean(:,:,slice));
+            vz_slice = single(args.velocity_mean(:,:,slice));
+            mag_slice = single(args.MAG(:,:,slice));
+
+            xrange = single(linspace(-1, 1, size(args.velocity_mean, 1)));
+            yrange = single(linspace(-1, 1, size(args.velocity_mean, 1))); % TODO: check if the indexes are correct as they differ from line 89
+            zrange = single(linspace(-1, 1, size(args.velocity_mean, 1))); % TODO: check if the indexes are correct as they differ from line 90
+            
+            % Range
+            if args.apply_correction == 1
+                [y, x, z] = meshgrid(yrange, xrange, zrange(slice));    
+                vx_slice = vx_slice - self.evaluate_poly(x, y, z, args.poly_fit_x);
+                vy_slice = vy_slice - self.evaluate_poly(x, y, z, args.poly_fit_y);
+                vz_slice = vz_slice - self.evaluate_poly(x, y, z, args.poly_fit_z);
+            end
+            
+            vmag = sqrt(vx_slice.^2 + vy_slice.^2 + + vz_slice.^2);
+            
+            % mag image
+            max_MAG = max(args.MAG(:));
+            idx = find((mag_slice > (0.3 * args.noise_threshold) * max_MAG) & (vmag < args.cd_threshold * args.velocity_encoding));
+            mag_slice = 200 * mag_slice/max(mag_slice(:));
+            mag_slice(idx) = 257;
+            
+            % velocity image
+            vel_mag = sqrt(vx_slice.^2 + vy_slice.^2 + vz_slice.^2);
+            vel_mag = 200*vel_mag / floor(500 * args.vmax);
+            idx = vel_mag >= 199;
+            vel_mag(idx) = 199;
+        end
+        
+        function [velocity, velocity_mean] = polyCorrection(args)
+            arguments
+                args.MAG;
+                args.velocity;
+                args.velocity_mean;
+                args.no_frames;
+                args.poly_fit_x;
+                args.poly_fit_y;
+                args.poly_fit_z;
+            end
+            velocity = zeros(size(args.velocity));
+            velocity_mean = zeros(size(args.velocity_mean));
+            
+            % Calculate a Polynomial 
+            disp("Correcting polynomial...");
+            xRange = single(linspace(-1, 1, size(args.MAG, 1)));
+            yRange = single(linspace(-1, 1, size(args.MAG, 2)));
+            zRange = single(linspace(-1, 1, size(args.MAG, 3)));
+            [y, x, z] = meshgrid(yRange, xRange, zRange);
+
+            poly_fit = [args.poly_fit_x, args.poly_fit_y, args.poly_fit_z];
+            xyzNames = {'VX', 'VY', 'VZ'};
+            for k = 1:numel(poly_fit)
+                name = xyzNames{k};
+                fprintf('    %s\n', name);
+                back = self.evaluate_poly(x, y, z, poly_fit(k));
+                back = single(back);
+                
+                velocity_mean(:,:,:,k) = args.velocity_mean(:,:,:,k) - back;
+                for m = 1:args.NoFrames
+                    velocity(:,:,:,k,m) = args.velocity(:,:,:,k,m) - back;
+                end
+            end
+        end
+
+        function mask = createAngiogram(args)
+            arguments
+                % TODO: add validations?
+                args.MAG;
+                args.velocity_mean;
+                args.velocity_encoding;
+                args.noise_threshold;
+                args.cd_threshold;
+            end
+            
+            mask = int8(zeros(size(args.MAG)));
+            max_MAG = max(args.MAG(:));
             for slice = 1:size(mask, 3)
                 % Grab a slice
-                mag_slice = single(MAG(:, :, slice));
-                vx_slice = single(vx(:, :, slice));
-                vy_slice = single(vy(:, :, slice));
-                vz_slice = single(vz(:, :, slice));
+                mag_slice = single(args.MAG(:,:,slice));
+                vx_slice = single(args.velocity_mean(:,:,slice));
+                vy_slice = single(args.velocity_mean(:,:,slice));
+                vz_slice = single(args.velocity_mean(:,:,slice));
                 
                 CD = sqrt(vx_slice.^2 + vy_slice.^2 + vz_slice.^2);
-                mask(:, :, slice) = (mag_slice > noise_threshold * max_MAG) .* (CD < cd_threshold * velocity_encoding);
+                mask(:,:,slice) = (mag_slice > args.noise_threshold * max_MAG) .* (CD < args.cd_threshold * args.velocity_encoding);
             end
         end
         
-        function poly_fit_3d(self, mask)
+        function [poly_fit_x, poly_fit_y, poly_fit_z] = ployFit3d(args)
+            %{
+            pass in name-value pairs for clarity
+            %}
+            arguments
+                % TODO: add validations
+                args.poly_fit_x;
+                args.poly_fit_y;
+                args.poly_fit_z;
+                args.vx;
+                args.vy;
+                args.vz;
+                args.fit_order;
+                args.mask;
+            end
+            
             % Lots of memory problems with vectorization!!! solve Ax = B by (A^hA) x = (A^h *b)
-            if self.FitOrder == 0
-                self.PolyFitX.vals  = mean(self.VX(:));
-                self.PolyFitX.px = 0;
-                self.PolyFitX.py = 0;
-                self.PolyFitX.pz = 0;
+            if args.fit_order == 0
+                args.poly_fit_x.vals  = mean(args.velocity_mean(:));
+                args.poly_fit_x.px = 0;
+                args.poly_fit_x.py = 0;
+                args.poly_fit_x.pz = 0;
             
-                self.PolyFitY.vals  = mean(self.VY(:));
-                self.PolyFitY.px = 0;
-                self.PolyFitY.py = 0;
-                self.PolyFitY.pz = 0;
+                args.poly_fit_y.vals  = mean(args.velocity_mean(:));
+                args.poly_fit_y.px = 0;
+                args.poly_fit_y.py = 0;
+                args.poly_fit_y.pz = 0;
             
-                self.PolyFitZ.vals  = mean(self.VZ(:));
-                self.PolyFitZ.px = 0;
-                self.PolyFitZ.py = 0;
-                self.PolyFitZ.pz = 0;
+                args.poly_fit_z.vals  = mean(args.velocity_mean(:));
+                args.poly_fit_z.px = 0;
+                args.poly_fit_z.py = 0;
+                args.poly_fit_z.pz = 0;
             else
-                [px, py, pz] = meshgrid(0:self.FitOrder, 0:self.FitOrder, 0:self.FitOrder);
-                idx2 = find((px+py+pz) <= self.FitOrder);
+                [px, py, pz] = meshgrid(0:args.fit_order, 0:args.fit_order, 0:args.fit_order);
+                idx2 = find((px+py+pz) <= args.fit_order);
                 px = px(idx2);
                 py = py(idx2);
                 pz = pz(idx2);
@@ -85,17 +165,18 @@ classdef BackgroundPhaseCorrection < handle
                 AhBy = zeros(N,1);
                 AhBz = zeros(N,1);
             
-                xrange = single(linspace(-1,1,size(self.VX,1)));
-                yrange = single(linspace(-1,1,size(self.VY,2)));
-                zrange = single(linspace(-1,1,size(self.VZ,3)));
+                xrange = single(linspace(-1,1,size(args.velocity_mean,1)));
+                yrange = single(linspace(-1,1,size(args.velocity_mean,2)));
+                zrange = single(linspace(-1,1,size(args.velocity_mean,3)));
             
+                % TODO: refactor for parfor?
                 for slice = 1:numel(zrange)
-                    vx_slice = single(self.VX(:,:,slice));
-                    vy_slice = single(self.VY(:,:,slice));
-                    vz_slice = single(self.VZ(:,:,slice));
+                    vx_slice = single(args.velocity_mean(:,:,slice));
+                    vy_slice = single(args.velocity_mean(:,:,slice));
+                    vz_slice = single(args.velocity_mean(:,:,slice));
             
                     [y,x,z] = meshgrid(yrange, xrange, zrange(slice));
-                    idx = find(mask(:, :, slice) > 0);
+                    idx = find(args.mask(:, :, slice) > 0);
                     x = x(idx);
                     y = y(idx);
                     z = z(idx);
@@ -116,99 +197,37 @@ classdef BackgroundPhaseCorrection < handle
                     end
                 end
             
+                % TODO: move to parallel processes?
                 % save variables to struct
-                self.PolyFitX.vals = linsolve(AhA, AhBx);
-                self.PolyFitX.px = px;
-                self.PolyFitX.py = py;
-                self.PolyFitX.pz = pz;
+                poly_fit_x.vals = linsolve(AhA, AhBx);
+                poly_fit_x.px = px;
+                poly_fit_x.py = py;
+                poly_fit_x.pz = pz;
             
-                self.PolyFitY.vals = linsolve(AhA, AhBy);
-                self.PolyFitY.px = px;
-                self.PolyFitY.py = py;
-                self.PolyFitY.pz = pz;
+                poly_fit_y.vals = linsolve(AhA, AhBy);
+                poly_fit_y.px = px;
+                poly_fit_y.py = py;
+                poly_fit_y.pz = pz;
             
-                self.PolyFitZ.vals = linsolve(AhA, AhBz);
-                self.PolyFitZ.px = px;
-                self.PolyFitZ.py = py;
-                self.PolyFitZ.pz = pz;
+                poly_fit_z.vals = linsolve(AhA, AhBz);
+                poly_fit_z.px = px;
+                poly_fit_z.py = py;
+                poly_fit_z.pz = pz;
             end
-        end
-
-        function [mag_slice, vel_mag] = get_slices(self, VIPR)
-            Vmax_ = floor(500 * self.Vmax);
-            NoiseThreshold_ = 0.3 * self.NoiseThreshold;
-            rczres = size(VIPR.MAG, 3);
-            slice = 1 + floor(self.Image*(rczres-1));
-            
-            % Get magnitude
-            vx_slice = single(self.VX(:,:,slice));
-            vy_slice = single(self.VY(:,:,slice));
-            vz_slice = single(self.VZ(:,:,slice));
-            mag_slice = single(VIPR.MAG(:,:,slice));
-
-            xrange = single(linspace(-1, 1, size(self.VX, 1)));
-            yrange = single(linspace(-1, 1, size(self.VY, 1))); % TODO: check if the indexes are correct as they differ from line 89
-            zrange = single(linspace(-1, 1, size(self.VZ, 1))); % TODO: check if the indexes are correct as they differ from line 90
-            
-            % Range
-            if self.ApplyCorrection == 1
-                [y, x, z] = meshgrid(yrange, xrange, zrange(slice));    
-                vx_slice = vx_slice - self.evaluate_poly(x, y, z, self.PolyFitX);
-                vy_slice = vy_slice - self.evaluate_poly(x, y, z, self.PolyFitY);
-                vz_slice = vz_slice - self.evaluate_poly(x, y, z, self.PolyFitZ);
-            end
-            
-            vmag = sqrt(vx_slice.^2 + vy_slice.^2 + + vz_slice.^2);
-            
-            max_MAG = max(VIPR.MAG(:));
-            idx = find((mag_slice > NoiseThreshold_ * max_MAG) & (vmag < self.CDThreshold * VIPR.VelocityEncoding));
-            mag_slice = 200 * mag_slice/max(mag_slice(:));
-            mag_slice(idx) = 257;
-            
-            vel_mag = sqrt(vx_slice.^2 + vy_slice.^2 + vz_slice.^2);
-            vel_mag = 200*vel_mag / Vmax_;
-            idx = vel_mag >= 199;
-            vel_mag(idx) = 199;
         end
         
-        function VIPR = poly_correction(self, VIPR)
-            % Calculate a Polynomial 
-            disp("Correcting polynomial...");
-            xRange = single(linspace(-1, 1, size(VIPR.MAG, 1)));
-            yRange = single(linspace(-1, 1, size(VIPR.MAG, 2)));
-            zRange = single(linspace(-1, 1, size(VIPR.MAG, 3)));
-            [y, x, z] = meshgrid(yRange, xRange, zRange);
-
-            polyFit = [self.PolyFitX, self.PolyFitY, self.PolyFitZ];
-            xyzNames = {'VX', 'VY', 'VZ'};
-            for k = 1:numel(polyFit)
-                name_ = xyzNames{k};
-                fprintf('    %s\n', name_);
-                back = self.evaluate_poly(x, y, z, polyFit(k));
-                back = single(back);
-                % TODO: read in this data via datastore and remove from memory
-                VIPR.VelocityMean(:, :, :, k) = VIPR.VelocityMean(:, :, :, k) - back;
-                for m = 1:VIPR.NoFrames
-                    VIPR.Velocity(:, :, :, k, m) = VIPR.Velocity(:, :, :, k, m) - back;
-                end
+        function poly_fit = resetFit(poly_fit)
+            %{
+            refactor! pass in a single poly_fit struct and set all fields to 0 and return
+            from the caller, do for each poly_fit struct
+            %}
+            
+            fields = fieldnames(poly_fit);
+            
+            for field = fields
+                poly_fit.(field) = 0;
             end
-        end
 
-        function reset_fit(self)
-            self.PolyFitX.vals = 0;
-            self.PolyFitX.px = 0;
-            self.PolyFitX.py = 0;
-            self.PolyFitX.pz = 0;
-
-            self.PolyFitY.vals = 0;
-            self.PolyFitY.px = 0;
-            self.PolyFitY.py = 0;
-            self.PolyFitY.pz = 0;
-
-            self.PolyFitZ.vals = 0;
-            self.PolyFitZ.px = 0;
-            self.PolyFitZ.py = 0;
-            self.PolyFitZ.pz = 0;
         end
         
     end
