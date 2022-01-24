@@ -87,6 +87,14 @@ classdef BackgroundPhaseCorrectionModel < handle
             self.CDThreshold = val;
         end
         
+        function setNoiseThreshold(self, val)
+            arguments
+                self;
+                val {mustBeInRange(val, 0, 1)};
+            end
+            self.NoiseThreshold = val;
+        end
+        
         function setFitOrder(self, val)
             arguments
                 self;
@@ -111,12 +119,28 @@ classdef BackgroundPhaseCorrectionModel < handle
             self.MagImage = val;
         end
         
+        function setMagImageCData(self, val)
+            arguments
+                self;
+                val;
+            end
+            self.MagImage.CData = val;
+        end
+        
         function setVelocityImage(self, val)
             arguments
                 self;
                 val
             end
             self.VelocityImage = val;
+        end
+        
+        function setVelocityImageCData(self, val)
+            arguments
+                self;
+                val
+            end
+            self.VelocityImage.CData = val;
         end
         
     end
