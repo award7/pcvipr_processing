@@ -99,7 +99,7 @@ classdef BaseController < handle
     end
     
     % callbacks from menu
-    methods (Access = ?BaseView)
+    methods (Access = {?BaseView, ?BaseController})
         
         %%% file menu
         function exitMenuButtonCallback(self, ~, ~)
@@ -366,7 +366,7 @@ classdef BaseController < handle
                 return;
             end
             self.BaseModel.DatabaseConnection = conn;
-            self.BaseView.setButtonState('TestDbConnectionMenuButton', ButtonState.on); 
+            self.BaseView.setButtonState('TestDbConnectionMenuButton', ButtonState.on);
         end
         
         function testDbConnectionMenuButtonCallback(self, src, evt)
@@ -591,9 +591,66 @@ classdef BaseController < handle
     % callbacks from OutputParametersView
     methods (Access = ?OutputParametersView)
         
-        function so()
+        function outputPathEditFieldValueChangedCallback(self, src, evt)
+            % validate that input is a folder
+            % if not, throw error dialog on view
+            try
+                mustBeFolder(evt.Value);
+            catch me
+                switch me.identifier
+                    case 'MATLAB:validators:mustBeFolder'
+                        uialert(src.UIFigure, ...
+                            me.message, ...        
+                            'PC VIPR Processing', ...
+                            'Icon', 'error', ...
+                            'Modal', true);
+                        src.OutputPathEditField.Value = evt.PreviousValue;
+                        self.OutputParametersModel.setOutputPath(evt.PreviousValue);
+                end
+            end
         end
         
+        function openFileBrowserButtonButtonPushedCallback(self, src, evt)
+            % open uigetdir
+            % set chosen dir to outputpath in view and model
+            
+            if ~(self.OutputParametersModel.OutputAsCsv)
+                return;
+            end
+            
+            fpath = uigetdir(self.OutputParametersModel.OutputPath);
+            
+            if fpath == 0
+                return;
+            end
+            src.OutputPathEditField.Value = fpath;
+            self.OutputParametersModel.setOutputPath(fpath);
+        end
+        
+        function outputAsCsvCheckBoxValueChangedCallback(self, src, evt)
+            % when true = enable outputpath field
+            % when false = disable outputpath field
+            % update associated prop in model
+            bool = logical(evt.Value);
+            src.OutputPathEditField.Editable = bool;
+            self.OutputParametersModel.setOutputAsCsv(bool);
+        end
+        
+        function connectToDbButtonCallback(self, src, evt)
+            % TODO: after calling the connectToDb view and selecting datasource,
+            % update the database fields in view
+            self.connectToDbMenuButtonCallback(src, evt);
+        end
+        
+        function okButtonPushedCallback(self, src, evt)
+            % todo: assign values from fields to associated model props
+            % self.OutputParametersModel.setDataSourceName(src.DataSourceEditField.Value);
+            % self.OutputParametersModel.setDatabaseName(src.DatabaseEditField.Value);
+            self.OutputParametersModel.setDatabaseTable(src.TableDropDown.Value);
+            self.OutputParametersModel.setOutputAsCsv(logical(src.OutputAsCsvCheckBox));
+            self.OutputParametersModel.setOutputPath(src.OutputPathEditField.Value);
+        end
+
     end
     
     % bgpc methods
@@ -609,6 +666,19 @@ classdef BaseController < handle
     
     % helper methods
     methods (Access = private)
+        
+        function setEditFieldEditable(self, view, fields, state)
+            arguments
+                self;
+                view    (1,1);
+                fields  (1,:) {mustBeText, mustBeNonempty};
+                state   (1,1) {mustBeUnderlyingType(state, 'ButtonState')};
+            end
+            
+            for i = 1:length(fields)
+                self.(view).(fields(i)).Editable = char(state);
+            end
+        end
         
         function setButtonState(self, buttons, state)
             arguments
