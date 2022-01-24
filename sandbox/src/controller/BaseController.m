@@ -28,6 +28,7 @@ classdef BaseController < handle
         ViprModel;
         BackgroundPhaseCorrectionModel;
         OutputParametersModel;
+        VesselSelectionModel;
     end
     
     properties (Access = private)
@@ -185,6 +186,10 @@ classdef BaseController < handle
                             'Cancelable', 'on', ...
                             'Pause', 'on', ...
                             'Duration', 5);
+            
+            % create model
+            self.VesselSelectionModel = VesselSelectionModel();
+            % TODO: set model props
             
             % create view
             VesselSelectionView(self);
@@ -424,7 +429,7 @@ classdef BaseController < handle
             end
 
             self.BackgroundPhaseCorrectionModel.setImage(value);
-            % src.update_images();
+            self.bgpcUpdateImages();
         end
         
         function bgpcVmaxValueChangedCallback(self, src, evt)
@@ -442,7 +447,7 @@ classdef BaseController < handle
                     value = value / 100;
             end
 
-            self.BaseModel.Vmax = value;
+            self.BackgroundPhaseCorrectionModel.setVmax(value);
 %             src.update_images();
         end
         
@@ -461,7 +466,7 @@ classdef BaseController < handle
                     value = value / 100;
             end
 
-            self.BaseModel.CDThreshold = value;
+            self.BackgroundPhaseCorrectionModel.setCDThreshold(value);
 %             src.update_images();
         end
         
@@ -480,38 +485,45 @@ classdef BaseController < handle
                     value = value / 100;
             end
 
-            self.BaseModel.NoiseThreshold = value;
+            self.BackgroundPhaseCorrectionModel.setNoiseThreshold(value);
 %             src.update_images();
         end
         
         function bgpcFitOrderValueChangedCallback(self, src, evt)
             value = floor(evt.Value);
-            self.BaseModel.FitOrder = value;
+            self.BackgroundPhaseCorrectionModel.setFitOrder(value);
 %             src.update_images();
         end
         
         function bgpcApplyCorrectionValueChangedCallback(self, src, evt)
             value = evt.Value;
-            self.BaseModel.ApplyCorrection = value;
+            self.BackgroundPhaseCorrectionModel.setApplyCorrection(value);
         end
         
         function bgpcUpdateButtonPushed(self, src, evt)
             % todo: get args to pass in
-            mask = BackgroundPhaseCorrection.createAngiogram();
-            app.poly_fit_3d(mask);
-            app.update_images();
+            % mask = BackgroundPhaseCorrection.createAngiogram();
+            % app.poly_fit_3d(mask);
+            % app.update_images();
         end
         
         function bgpcResetFitButtonPushed(self, src, evt)
-            app.reset_fit();
-            app.update_images();
+            % app.reset_fit();
+            % app.update_images();
         end
         
         function bgpcDoneButtonPushed(self, src, evt)
-            app.CenterlineToolApp.VIPR = app.poly_correction(app.CenterlineToolApp.VIPR);
-            app.CenterlineToolApp.VIPR.TimeMIP = CalculateAngiogram.calculate_angiogram(app.CenterlineToolApp.VIPR);
-            [~, app.CenterlineToolApp.VIPR.Segment] = CalculateSegment(app.CenterlineToolApp.VIPR);
-            app.save_();
+            % get args for poly_correction
+            % args.MAG = self.ViprModel.;
+            args.velocity;
+            args.velocity_mean;
+            args.no_frames;
+            args.poly_fit_x;
+            args.poly_fit_y;
+            args.poly_fit_z;
+            [velocity, velocity_mean] = BackgroundPhaseCorrection.polyCorrection();
+            % time_mip = CalculateAngiogram.calculate_angiogram();
+            % [~, segment] = CalculateSegment();
         end
 
     end
@@ -535,6 +547,35 @@ classdef BaseController < handle
             disp(evt);
         end
         
+        %%% may not constitute callbacks
+        % TODO: move to separate private methods????
+%         function vsInitializeSlices(self)
+%             % todo: get MAGr argument
+%             self.VesselSelectionModel.setXSlice(floor(size(MAGR, 1)/2));
+%             self.VesselSelectionModel.setYSlice(floor(size(MAGR, 2)/2));
+%             self.VesselSelectionModel.setXSlice(floor(size(MAGR, 3)/2));
+%         end
+%         
+%         function vsInitializeSliceMax(self)
+%             % todo: get MAGr argument
+%             self.VesselSelectionModel.setXSliceMax(size(MAGR, 1));
+%             self.VesselSelectionModel.setYSliceMax(size(MAGR, 2));
+%             self.VesselSelectionModel.setZSliceMax(size(MAGR, 3));
+%         end
+%         
+%         function vsInitializeSagittalData(self)
+%             self.SagittalData = zeros(320,320,3,self.XSliceMax, 'uint8');
+%             
+%             % returns a 320x320x3 array
+%             for slice = self.AbsLowerBound:self.XSliceMax
+%                 self.XSlice = slice;
+%                 self.SagittalData(:,:,:,slice) = permute(cat(1, self.MAGR(self.XSlice,:,:), ...
+%                                                                self.MAGG(self.XSlice,:,:), ...
+%                                                                self.MAGB(self.XSlice,:,:)), ...
+%                                                                [3 2 1]);
+%             end
+%         end
+%         
     end
     
     % callbacks from Vessel3DView
@@ -657,9 +698,9 @@ classdef BaseController < handle
     methods (Access = private)
         
         function bgpcUpdateImages(self)
-            [mag_slice, velocity_slice] = app.get_slices(app.CenterlineToolApp.VIPR);
-            app.MagImage.CData = mag_slice;
-            app.VelocityImage.CData = velocity_slice;
+            [mag_slice, velocity_slice] = BackgroundPhaseCorrection.getSlices();
+            self.BackgroundPhaseCorrectionModel.setMagImageCData(mag_slice);
+            self.BackgroundPhaseCorrectionModel.setVelocityImageCData(velocity_slice);
         end
         
     end
