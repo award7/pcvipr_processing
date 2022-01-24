@@ -8,12 +8,12 @@ classdef OutputParametersView < matlab.apps.AppBase
     %}
     
     % base figure and layout components
-    properties (Access = public)
+    properties (GetAccess = public, SetAccess = {?BaseController, ?OutputParametersView})
         UIFigure    matlab.ui.Figure;
     end
     
     % fields in subject details tab
-    properties (Access = private)
+    properties (GetAccess = public, SetAccess = {?BaseController, ?OutputParametersView})
         StudyEditField            matlab.ui.control.EditField;
         SubjectEditField          matlab.ui.control.EditField;
         ConditionVisitEditField   matlab.ui.control.EditField;
@@ -21,7 +21,7 @@ classdef OutputParametersView < matlab.apps.AppBase
     end
     
     % fields in database tab
-    properties
+    properties (GetAccess = public, SetAccess = {?BaseController, ?OutputParametersView})
         DataSourceEditField       matlab.ui.control.EditField;
         DatabaseDropDown          matlab.ui.control.DropDown;
         TableDropDown             matlab.ui.control.DropDown;
@@ -29,14 +29,14 @@ classdef OutputParametersView < matlab.apps.AppBase
     end
     
     % fields in dataoutput path
-    properties
+    properties (GetAccess = public, SetAccess = {?BaseController, ?OutputParametersView})
         OutputAsCsvCheckBox     matlab.ui.control.CheckBox;
         OpenFileBrowserButton   matlab.ui.control.Button;
         OutputPathEditField     matlab.ui.control.EditField;
     end
 
-    % App creation and deletion
-    methods (Access = public)
+    % constructor
+    methods (Access = ?BaseController)
 
         % Construct app
         function app = OutputParametersView(controller)
@@ -52,12 +52,15 @@ classdef OutputParametersView < matlab.apps.AppBase
             end
         end
 
-        % Code that executes before app deletion
+    end
+    
+    % deleter
+    methods (Access = public)
+        
         function delete(app)
-
-            % Delete UIFigure when app is deleted
             delete(app.UIFigure)
         end
+        
     end
     
     % Component initialization
@@ -88,7 +91,6 @@ classdef OutputParametersView < matlab.apps.AppBase
             app.UIFigure.Icon = 'db.png';
             app.UIFigure.Resize = 'off';
             app.UIFigure.WindowStyle = 'modal';
-            % todo: set callbacks
         end
         
         function createTabGroup(app, controller)
@@ -107,22 +109,38 @@ classdef OutputParametersView < matlab.apps.AppBase
             % Create StudyEditField
             app.StudyEditField = uieditfield(tab, 'text');
             app.StudyEditField.Position = [120 136 120 20];
-            app.StudyEditField.Value = controller.OutputParametersModel.Study;
+            if ~isempty(controller.OutputParametersModel.Study)
+                app.StudyEditField.Value = controller.OutputParametersModel.Study;
+            else
+                app.StudyEditField.Value = '';
+            end
 
             % Create SubjectEditField
             app.SubjectEditField = uieditfield(tab, 'text');
             app.SubjectEditField.Position = [120 97 120 20];
-            app.SubjectEditField.Value = controller.OutputParametersModel.Subject;
+            if ~isempty(controller.OutputParametersModel.Subject)
+                app.SubjectEditField.Value = controller.OutputParametersModel.Subject;
+            else
+                app.SubjectEditField.Value = '';
+            end
 
             % Create ConditionVisitEditField
             app.ConditionVisitEditField = uieditfield(tab, 'text');
             app.ConditionVisitEditField.Position = [120 58 120 20];
-            app.ConditionVisitEditField.Value = controller.OutputParametersModel.ConditionOrVisit;
+            if ~isempty(controller.OutputParametersModel.ConditionOrVisit)
+                app.ConditionVisitEditField.Value = controller.OutputParametersModel.ConditionOrVisit;
+            else
+                app.ConditionVisitEditField.Value = '';
+            end
 
             % Create TimePointEditField
             app.TimePointEditField = uieditfield(tab, 'text');
             app.TimePointEditField.Position = [120 19 120 20];
-            app.TimePointEditField.Value = controller.OutputParametersModel.TimePoint;
+            if ~isempty(controller.OutputParametersModel.TimePoint)
+                app.TimePointEditField.Value = controller.OutputParametersModel.TimePoint;
+            else
+                app.TimePointEditField.Value = '';
+            end
 
             % Create SubjectLabel
             subject_label = uilabel(tab);
@@ -256,5 +274,5 @@ classdef OutputParametersView < matlab.apps.AppBase
         end
 
     end
-    
+
 end
