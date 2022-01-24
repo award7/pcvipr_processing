@@ -7,7 +7,7 @@ classdef OutputParametersModel < handle
         TimePoint = "";
         DataSourceName = "";
         DatabaseName = "";
-        DatabaseTables = "";
+        DatabaseTable = "";
         OutputAsCsv = true;
         OutputPath = "";
         DatabaseConnection;
@@ -72,12 +72,12 @@ classdef OutputParametersModel < handle
             self.DatabaseName = val;
         end
         
-        function setDatabaseTables(self, val)
+        function setDatabaseTable(self, val)
             arguments
                 self;
-                val (1,:) {mustBeText};
+                val (1,1) {mustBeText};
             end
-            self.DatabaseTables = val;
+            self.DatabaseTable = val;
         end
 
         function setOutputAsCsv(self, val)
