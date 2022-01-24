@@ -5,15 +5,15 @@ classdef OutputParametersModel < handle
         Subject;
         ConditionOrVisit;
         TimePoint;
-        DataSourceName;
+        DatabaseConnection;
         DatabaseName;
         DatabaseTable;
         OutputAsCsv = true;
         OutputPath;
-        DatabaseConnection;
     end
     
     properties (Access = public, Dependent)
+        DataSourceName;
         DatabaseList;
         TableList;
     end
@@ -29,13 +29,17 @@ classdef OutputParametersModel < handle
     % getters
     methods
         
+        function val = get.DataSourceName(self)
+            val = self.DatabaseConnection.DataSource;
+        end
+        
         function val = get.DatabaseList(self)
             val = self.DatabaseConnection.Catalogs;
         end
         
         function val = get.TableList(self)
             sql = sprintf("SELECT TABLE_NAME FROM %s.INFORMATION_SCHEMA.TABLES ORDER BY TABLE_NAME;", self.DatabaseConnection.DefaultCatalog);
-            val = self.DatabaseConnection.fetch(sql);
+            val = self.DatabaseConnection.fetch(sql, 'DataReturnFormat', 'cellarray');
         end
         
     end
