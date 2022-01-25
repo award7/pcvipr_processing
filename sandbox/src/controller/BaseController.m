@@ -165,6 +165,7 @@ classdef BaseController < handle
         
         function viewFullVasculatureMenuButtonCallback(self, src, evt)
             % display full vasculature
+            return;
         end
         
         function backgroundPhaseCorrectionMenuButtonCallback(self, src, evt)
@@ -211,13 +212,11 @@ classdef BaseController < handle
         end
         
         function drawROIMenuButtonCallback(self, src, evt)
-            % todo: show error dialog 'Not Implemented'
-            self.State = AppState.ROI;
+            return;
         end
         
         function viewParametricMapMenuButtonCallback(self, src, evt)
-            % todo: show error dialog 'Not Implemented'
-            self.State = AppState.ParametricMap;
+            return;
         end
         
         function featureExtractionMenuButtonCallback(self, src, evt)
@@ -225,75 +224,25 @@ classdef BaseController < handle
         end
         
         function vesselSelectionMenuButtonCallback(self, src, evt)
-            if strcmp(self.State, 'VesselSelect')
-                return;
-            end
-            
-            % create progress bar for enhancing UX
-            msg = 'Rendering MR Images for Vessel Selection';
-            ProgressBarView(self.BaseView.UIFigure, ...
-                            'Message', msg, ...
-                            'Indeterminate', 'on', ...
-                            'Cancelable', 'on', ...
-                            'Pause', 'on', ...
-                            'Duration', 5);
-            
             % create model
-            self.VesselSelectionModel = VesselSelectionModel();
+            % self.VesselSelectionModel = VesselSelectionModel();
             % TODO: set model props
             
             % create view
-            VesselSelectionView(self);
-            
-            % change app state
-            self.State = AppState.VesselSelect;
+            % VesselSelectionView(self);
         end
         
         function segmentVesselsMenuButtonCallback(self, src, evt)
         end
         
         function vessel3dMenuButtonCallback(self, src, evt)
-            % display segmented vasculature
-            % don't reload if it's currently in this state
-            if strcmp(self.State, 'Vessel3D')
-                return;
-            end
-            
-            % create progress bar for enhancing UX
-            msg = 'Rendering Selected Vessels in 3D';
-            ProgressBarView(self.BaseView.UIFigure, ...
-                            'Message', msg, ...
-                            'Indeterminate', 'on', ...
-                            'Cancelable', 'on', ...
-                            'Pause', 'on', ...
-                            'Duration', 5);
             % create view
-            Vessel3DView(self);
-            
-            % change app state
-            self.State = AppState.Vessel3D;
+            % Vessel3DView(self);
         end
         
         function parameterPlotMenuButtonCallback(self, src, evt)
-            % display parameter plots
-            % don't reload if it's currently in this state
-            if strcmp(self.State, 'ParameterPlot')
-                return;
-            end
-            
-            % create progress bar for enhancing UX
-            msg = 'Plotting Vessel Parameters';
-            ProgressBarView(self.BaseView.UIFigure, ...
-                            'Message', msg, ...
-                            'Indeterminate', 'on', ...
-                            'Cancelable', 'on', ...
-                            'Pause', 'on', ...
-                            'Duration', 10);
             % create view
-            ParameterPlotView(self);
-            
-            % change app state
-            self.State = AppState.ParameterPlot;
+            % ParameterPlotView(self);
         end
         
         %%% datasource menu
@@ -365,14 +314,6 @@ classdef BaseController < handle
                 % assign the OutputParametersModel object to the OutputParametersModel property of this class
                 self.OutputParametersModel = OutputParametersModel();
             end
-            
-            %%% get datastores
-%             velocity_ds = LoadViprDS.getVelocityDataStore(velocity_fs);
-%             velocity_mean_ds = LoadViprDS.getVelocityMeanDataStore(velocity_mean_fs);
-%             mag_ds = LoadViprDS.getMagDataStore(mag_fs);
-%             self.ViprModel.setVelocityDS(velocity_ds);
-%             self.ViprModel.setVelocityMeanDS(velocity_mean_ds);
-%             self.ViprModel.setMagDS(mag_ds);
             
             %%% set model values
             self.ViprModel.setDataDirectory(data_directory);
@@ -539,7 +480,7 @@ classdef BaseController < handle
             end
 
             self.BackgroundPhaseCorrectionModel.setVmax(value);
-%             src.update_images();
+            self.bgpcUpdateImages(src);
         end
         
         function bgpcCdThresholdValueChangedCallback(self, src, evt)
@@ -558,7 +499,7 @@ classdef BaseController < handle
             end
 
             self.BackgroundPhaseCorrectionModel.setCDThreshold(value);
-%             src.update_images();
+            self.bgpcUpdateImages(src);
         end
         
         function bgpcNoiseThresholdValueChangedCallback(self, src, evt)
@@ -577,13 +518,13 @@ classdef BaseController < handle
             end
 
             self.BackgroundPhaseCorrectionModel.setNoiseThreshold(value);
-%             src.update_images();
+            self.bgpcUpdateImages(src);
         end
         
         function bgpcFitOrderValueChangedCallback(self, src, evt)
             value = floor(evt.Value);
             self.BackgroundPhaseCorrectionModel.setFitOrder(value);
-%             src.update_images();
+            self.bgpcUpdateImages(src);
         end
         
         function bgpcApplyCorrectionValueChangedCallback(self, src, evt)
@@ -592,10 +533,43 @@ classdef BaseController < handle
         end
         
         function bgpcUpdateButtonPushed(self, src, evt)
-            % todo: get args to pass in
-            % mask = BackgroundPhaseCorrection.createAngiogram();
-            % app.poly_fit_3d(mask);
-            % app.update_images();
+            %%% create dialog so user knows it's working
+            msg = "Updating Images";
+            dlg = ProgressBarView(self.BaseView.UIFigure, ...
+                            'Message', msg, ...
+                            'Indeterminate', 'on', ...
+                            'Cancelable', 'off', ...
+                            'Pause', 'off');
+            
+            %%% create mask
+            % from vipr model
+            args.mag = self.ViprModel.MagArray;
+            args.velocity_mean = self.ViprModel.VelocityMeanArray;
+            args.velocity_encoding = self.ViprModel.VelocityEncoding;
+            
+            % from bgpc model
+            args.noise_threshold = self.BackgroundPhaseCorrectionModel.NoiseThreshold;
+            args.cd_threshold = self.BackgroundPhaseCorrectionModel.CDThreshold;
+            
+            args_array = namedargs2cell(args);
+            mask = BackgroundPhaseCorrection.createAngiogram(args_array{:});
+            clear args;
+            
+            %%% perform poly fit
+            % from vipr model
+            args.velocity_mean = self.ViprModel.VelocityMeanArray;
+            
+            % from bgpc model
+            args.fit_order = self.BackgroundPhaseCorrectionModel.FitOrder;
+            args.mask = mask;
+            
+            args_array = namedargs2cell(args);
+            poly_fit = BackgroundPhaseCorrection.polyFit3d(args_array{:});
+            self.BackgroundPhaseCorrectionModel.setPolyFit(poly_fit);
+            
+            %%% update images
+            self.bgpcUpdateImages(src);
+            dlg.close();
         end
         
         function bgpcResetFitButtonPushed(self, src, evt)
@@ -815,7 +789,6 @@ classdef BaseController < handle
             args.mag = self.ViprModel.MagArray;
             args.velocity_mean = self.ViprModel.VelocityMeanArray;
             args.velocity_encoding = self.ViprModel.VelocityEncoding;
-            args.resolution = self.ViprModel.Resolution;
             args.apply_correction = self.BackgroundPhaseCorrectionModel.ApplyCorrection;
             args.image = self.BackgroundPhaseCorrectionModel.Image;
             args.vmax = self.BackgroundPhaseCorrectionModel.Vmax;
