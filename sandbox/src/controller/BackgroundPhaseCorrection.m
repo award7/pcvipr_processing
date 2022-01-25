@@ -94,30 +94,23 @@ classdef BackgroundPhaseCorrection < handle
             arguments
                 % from vipr model
                 args.mag;
-                args.velocity;
-                args.velocity_mean;
                 args.no_frames;
                 
                 % from bgpc model
                 args.poly_fit;
             end
             
-            % Calculate a Polynomial 
-            
+            % Calculate a Polynomial
             xRange = single(linspace(-1, 1, size(args.mag, 1)));
             yRange = single(linspace(-1, 1, size(args.mag, 2)));
             zRange = single(linspace(-1, 1, size(args.mag, 3)));
             [y, x, z] = meshgrid(yRange, xRange, zRange);
 
             poly_fit = [args.poly_fit.x, args.poly_fit.y, args.poly_fit.z];
-            xyzNames = {'VX', 'VY', 'VZ'};
-            
             dim = size(x,1);
             correction_factor = zeros(dim,dim,dim,3);
             
             for k = 1:numel(poly_fit)
-                name = xyzNames{k};
-                fprintf('    %s\n', name);
                 correction_factor(:,:,:,k) = BackgroundPhaseCorrection.evaluatePoly(x, y, z, poly_fit(k));
                 
 %                 velocity_mean(:,:,:,k) = args.velocity_mean(:,:,:,k) - back;
@@ -128,6 +121,52 @@ classdef BackgroundPhaseCorrection < handle
             correction_factor = single(correction_factor);
         end
 
+        function time_mip = calculateAngiogram(args)
+            arguments
+                args.mag
+                args.velocity_mean
+                args.velocity_encoding
+            end
+            vmag = sqrt(sum(args.velocity_mean.^2, 4));
+            vmag(vmag > args.velocity_encoding) = args.velocity_encoding;
+            time_mip = 32000 * args.mag .* sin(pi/2*vmag/args.velocity_encoding);
+        end
+        
+        function segment = calculateSegment(args)
+            arguments
+                args.time_mip;
+                args.resolution;
+                args.MXStart = 1;
+                args.MYStart= 1;
+                args.MZStart = 1;
+            end
+            
+            % for readability
+            MXStop = args.resolution;
+            MYStop = args.resolution;
+            MZStop = args.resolution;
+
+            % calculate time mip
+            timeMIP2 = ones(size(args.time_mip));
+            
+            % I think this just creates an array of ones and can be
+            % initialized easier in the previous step...
+            timeMIP2(args.MXStart:MXStop, args.MYStart:MYStop, args.MZStart:MZStop) = 1;
+            timeMIP_crop = args.time_mip .* timeMIP2;
+            
+            normed_MIP = timeMIP_crop(:) ./ max(timeMIP_crop(:));
+            [muhat, sigmahat] = normfit(normed_MIP);
+            segment = zeros(size(timeMIP_crop));
+            segment(normed_MIP > muhat + 4.5 * sigmahat) = 1;
+            
+            % The value at the end of the commnad in the minimum area of each segment to keep 
+            segment = bwareaopen(segment, round(sum(segment(:)) .* 0.005), 6); 
+            
+            % Fill in holes created by slow flow on the inside of vessels
+            segment = imfill(segment, 'holes'); 
+            segment = single(segment);
+        end
+        
     end
     
     % methods called only from "Update"
@@ -204,6 +243,9 @@ classdef BackgroundPhaseCorrection < handle
                 zrange = single(linspace(-1,1,size(args.velocity_mean,3)));
                 
                 % TODO: refactor for parfor?
+                %   e.g. if fit_order => 3, as the higher orders will
+                %   require more compute and the increase is non-linear
+                % Some of this code doesn't make sense.
                 for slice = 1:numel(zrange)
                     vx_slice = single(args.velocity_mean(:,:,slice,1));
                     vy_slice = single(args.velocity_mean(:,:,slice,2));
@@ -218,16 +260,21 @@ classdef BackgroundPhaseCorrection < handle
                     vy_slice = vy_slice(idx);
                     vz_slice = vz_slice(idx);
                     
+                    % this is the bottleneck
+                    % AhA is overwritten for each iteration of slice (i.e.
+                    % the outer loop)
                     for i = 1:N
                         for j = 1:N
                             AhA(i,j) =  AhA(i,j) + sum((x.^px(i).*y.^py(i).*z.^pz(i)).*((x.^px(j).*y.^py(j).*z.^pz(j))));
                         end
                     end
                     
+                    % these arrays are overwritten for each iteration of slice (i.e.
+                    % the outer loop)
                     for i = 1:N
-                        AhBx(i) = AhBx(i) + sum(vx_slice.* ( x.^px(i).*y.^py(i).*z.^pz(i)));
-                        AhBy(i) = AhBy(i) + sum(vy_slice.* ( x.^px(i).*y.^py(i).*z.^pz(i)));
-                        AhBz(i) = AhBz(i) + sum(vz_slice.* ( x.^px(i).*y.^py(i).*z.^pz(i)));
+                        AhBx(i) = AhBx(i) + sum(vx_slice.* (x.^px(i).*y.^py(i).*z.^pz(i)));
+                        AhBy(i) = AhBy(i) + sum(vy_slice.* (x.^px(i).*y.^py(i).*z.^pz(i)));
+                        AhBz(i) = AhBz(i) + sum(vz_slice.* (x.^px(i).*y.^py(i).*z.^pz(i)));
                     end
                 end
                 
@@ -236,7 +283,7 @@ classdef BackgroundPhaseCorrection < handle
                 poly_fit.x.px = px;
                 poly_fit.x.py = py;
                 poly_fit.x.pz = pz;
-            
+                
                 poly_fit.y.vals = linsolve(AhA, AhBy);
                 poly_fit.y.px = px;
                 poly_fit.y.py = py;
