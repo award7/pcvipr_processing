@@ -9,9 +9,7 @@ classdef BackgroundPhaseCorrectionModel < handle
         ApplyCorrection = true;
         MagImage;
         VelocityImage;
-        PolyFitX = struct;
-        PolyFitY = struct;
-        PolyFitZ = struct;
+        PolyFit = struct;
     end
     
     properties (Dependent)
@@ -23,30 +21,6 @@ classdef BackgroundPhaseCorrectionModel < handle
     methods
         
         function self = BackgroundPhaseCorrectionModel()
-        end
-        
-    end
-    
-    % TODO: move to controller
-    % initialization of images
-    methods (Access = public)
-        
-        function initMagImage(self, parent)
-            arguments
-                self;
-                parent;
-            end
-            img = self.WhiteImage;
-            self.MagImage = imagesc(parent, 'CData', img, [0 210]);
-        end
-        
-        function initVelocityImage(self, parent)
-            arguments
-                self;
-                parent;
-            end
-            img = self.WhiteImage;
-            self.VelocityImage = imagesc(parent, 'CData', img, [0 210]);
         end
         
     end
@@ -145,6 +119,14 @@ classdef BackgroundPhaseCorrectionModel < handle
                 val
             end
             self.VelocityImage.CData = val;
+        end
+        
+        function setPolyFit(self, val)
+            arguments
+                self;
+                val {mustBeA(val, 'struct')};
+            end
+            self.PolyFit = val;
         end
         
     end
