@@ -15,6 +15,16 @@ classdef ViprModel < handle
         MagFS;
     end
     
+    % large arrays
+    properties (GetAccess = public, SetAccess = private)
+        % these are used temporarily in with certain views to allow faster
+        % image viewing by loading the data into memory from the respective 
+        % filestore
+        VelocityArray;
+        VelocityMeanArray;
+        MagArray;
+    end
+    
     % vipr processing parameters
     properties (GetAccess = public,  SetAccess = private)
         % data source
@@ -152,6 +162,31 @@ classdef ViprModel < handle
                 val (1,1) {mustBeA(val, 'struct')};
             end
             self.ScanParameters = val;
+        end
+        
+        % TODO: add validation to these methods
+        function setVelocityArray(self, val)
+            arguments
+                self;
+                val;
+            end
+            self.VelocityArray = val;
+        end
+        
+        function setVelocityMeanArray(self, val)
+            arguments
+                self;
+                val;
+            end
+            self.VelocityMeanArray = val;
+        end
+        
+        function setMagArray(self, val)
+            arguments
+                self;
+                val;
+            end
+            self.MagArray = val;
         end
         
     end
