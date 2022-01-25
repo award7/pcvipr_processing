@@ -655,7 +655,7 @@ classdef BaseController < handle
             
             segment = BackgroundPhaseCorrection.calculateSegment(args_array{:});
             self.ViprModel.setSegment(segment);
-            
+
             %%% close dialog
             dlg.close();
         end
@@ -852,7 +852,7 @@ classdef BaseController < handle
     % bgpc methods
     methods (Access = private)
         
-        function bgpcUpdateImages(self, view)            
+        function bgpcUpdateImages(self, view)
             % package variables into struct
             args.mag = self.ViprModel.MagArray;
             args.velocity_mean = self.ViprModel.VelocityMeanArray;
@@ -893,6 +893,8 @@ classdef BaseController < handle
                 ];
             
             if ~any(new_state == states_with_large_arrays)
+                self.BackgroundPhaseCorrectionModel.setMagImage([]);
+                self.BackgroundPhaseCorrectionModel.setVelocityImage([]);
                 self.ViprModel.setVelocityArray([]);
                 self.ViprModel.setVelocityMeanArray([]);
                 self.ViprModel.setMagArray([]);
