@@ -1,6 +1,7 @@
 classdef BackgroundPhaseCorrection < handle
     % methods for applying background phase correction to PC VIPR data
 
+    % methods called by >1 callback
     methods (Access = ?BaseController, Static)
         
         function [mag_slice, vel_mag] = getSlices(args)
@@ -57,42 +58,6 @@ classdef BackgroundPhaseCorrection < handle
             vel_mag(idx) = 199;
         end
         
-        function correction_factor = polyCorrection(args)
-            % called from "Done"
-            arguments
-                args.MAG;
-%                 args.velocity;
-%                 args.velocity_mean;
-                args.no_frames;
-                args.poly_fit_x;
-                args.poly_fit_y;
-                args.poly_fit_z;
-            end
-%             velocity = zeros(size(args.velocity));
-%             velocity_mean = zeros(size(args.velocity_mean));
-            
-            % Calculate a Polynomial 
-            disp("Correcting polynomial...");
-            xRange = single(linspace(-1, 1, size(args.MAG, 1)));
-            yRange = single(linspace(-1, 1, size(args.MAG, 2)));
-            zRange = single(linspace(-1, 1, size(args.MAG, 3)));
-            [y, x, z] = meshgrid(yRange, xRange, zRange);
-
-            poly_fit = [args.poly_fit_x, args.poly_fit_y, args.poly_fit_z];
-            xyzNames = {'VX', 'VY', 'VZ'};
-            for k = 1:numel(poly_fit)
-                name = xyzNames{k};
-                fprintf('    %s\n', name);
-                correction_factor(k) = self.evaluatePoly(x, y, z, poly_fit(k));
-                
-%                 velocity_mean(:,:,:,k) = args.velocity_mean(:,:,:,k) - back;
-%                 for m = 1:args.NoFrames
-%                     velocity(:,:,:,k,m) = args.velocity(:,:,:,k,m) - back;
-%                 end
-            end
-            correction_factor = single(correction_factor);
-        end
-
         function poly_fit = resetFit()
             % called from "Reset Fit" and during initialization
             poly_fit = struct;
@@ -105,15 +70,64 @@ classdef BackgroundPhaseCorrection < handle
                 end
             end
         end
-
+        
+    end
+    
+    % methods called only during intialization of the view
+    methods (Access = ?BaseController, Static)
+        
         function img = initImage(parent, img)
             arguments
+                % TODO: add validations
                 parent;
                 img;
             end
             img = imagesc(parent, 'CData', img, [0 210]);
         end
         
+    end
+    
+    % methods called only from "Done"
+    methods (Access = ?BaseController, Static)
+        
+        function correction_factor = polyCorrection(args)
+            arguments
+                % from vipr model
+                args.mag;
+                args.velocity;
+                args.velocity_mean;
+                args.no_frames;
+                
+                % from bgpc model
+                args.poly_fit;
+            end
+            
+            % Calculate a Polynomial 
+            
+            xRange = single(linspace(-1, 1, size(args.mag, 1)));
+            yRange = single(linspace(-1, 1, size(args.mag, 2)));
+            zRange = single(linspace(-1, 1, size(args.mag, 3)));
+            [y, x, z] = meshgrid(yRange, xRange, zRange);
+
+            poly_fit = [args.poly_fit.x, args.poly_fit.y, args.poly_fit.z];
+            xyzNames = {'VX', 'VY', 'VZ'};
+            
+            dim = size(x,1);
+            correction_factor = zeros(dim,dim,dim,3);
+            
+            for k = 1:numel(poly_fit)
+                name = xyzNames{k};
+                fprintf('    %s\n', name);
+                correction_factor(:,:,:,k) = BackgroundPhaseCorrection.evaluatePoly(x, y, z, poly_fit(k));
+                
+%                 velocity_mean(:,:,:,k) = args.velocity_mean(:,:,:,k) - back;
+%                 for m = 1:args.NoFrames
+%                     velocity(:,:,:,k,m) = args.velocity(:,:,:,k,m) - back;
+%                 end
+            end
+            correction_factor = single(correction_factor);
+        end
+
     end
     
     % methods called only from "Update"
@@ -146,7 +160,7 @@ classdef BackgroundPhaseCorrection < handle
         function poly_fit = polyFit3d(args)
             % pass in name-value pairs for clarity
             arguments
-                % TODO: add validations
+                % TODO: add validations?
                 args.velocity_mean;
                 args.fit_order;
                 args.mask;
