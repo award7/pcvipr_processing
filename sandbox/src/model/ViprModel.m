@@ -41,41 +41,7 @@ classdef ViprModel < handle
         ScanParameters;
     end
     
-    % only load these when needed
-    % todo: restrict class access after developing
-    properties (GetAccess = public, Dependent)
-        Velocity;
-        VelocityMean;
-        MAG;
-        MAGr;
-        MAGg;
-        MAGb;
-    end
-    
-    % getters for dependent props
-    methods
-        
-        function val = get.Velocity(self)
-            
-        end
-        
-        function val = get.VelocityMean(self)
-        end
-        
-        function val = get.MAG(self)
-        end
-        
-        function val = get.MAGr(self)
-        end
-        
-        function val = get.MAGg(self)
-        end
-        
-        function val = get.MAGb(self)
-        end
-        
-    end
-    
+    % constructor
     methods (Access = ?BaseController)
         function self = ViprModel()
         end
