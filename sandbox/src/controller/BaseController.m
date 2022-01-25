@@ -228,13 +228,26 @@ classdef BaseController < handle
                             'Cancelable', 'off', ...
                             'Pause', 'on', ...
                             'Duration', 5);
-                        
-            % Thinning operation
+            
+            % TODO: move the loading of velocity mean to a separate method
+            % as it gets called by multiple methods
+            % allocate velocity mean array and read data from filestore
+            res = self.ViprModel.Resolution;
+            velocity_mean = zeros(res,res,res,3);
+            self.ViprModel.VelocityMeanFS.reset;
+            i = 1;
+            while self.ViprModel.VelocityMeanFS.hasdata
+                velocity_mean(:,:,:,i) = self.ViprModel.VelocityMeanFS.read();
+                i = i + 1;
+            end
+            self.ViprModel.setVelocityMeanArray(velocity_mean);
+            
+            %%% Thinning operation
             dlg.Message = "Performing Axis Thinning";
             skeleton = Skeleton3D(self.ViprModel.Segment);
             dlg.Message = "Finished Thinning Operation";
 
-            % Skeletonizatioin
+            %%% Skeletonizatioin
             % VASCULAR TREE CONSTUCTION
             % specify sorting_criteria as either
             % = 2 to get all branches connected to each other sorting (few branches)
@@ -257,6 +270,8 @@ classdef BaseController < handle
             self.ViprModel.setBranchMat(branchMat);
             self.ViprModel.setBranchList(branchList);
             dlg.close();
+            
+            %%% TODO: call vessel selection??
         end
         
         function vesselSelectionMenuButtonCallback(self, src, evt)
@@ -481,6 +496,7 @@ classdef BaseController < handle
     % callbacks from BackgroundPhaseCorrectionView
     methods (Access = ?BackgroundPhaseCorrectionView)
         
+        % TODO: wrap the slider/spinner callbacks
         function bgpcImageValueChangedCallback(self, src, evt)
             value = evt.Value;
             
@@ -658,6 +674,8 @@ classdef BaseController < handle
 
             %%% close dialog
             dlg.close();
+            
+            %%% TODO: call feature extraction??
         end
 
     end
