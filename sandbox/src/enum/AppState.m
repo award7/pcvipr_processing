@@ -1,11 +1,11 @@
 classdef AppState
     enumeration
-        FullVasculature;
         BackgroundPhaseCorrection;
-        ROI;
-        ParametricMap;
-        VesselSelect;
-        Vessel3D;
+        FullVasculature;
         ParameterPlot;
+        ParametricMap;
+        ROI;
+        Vessel3D;
+        VesselSelect;
     end
 end
