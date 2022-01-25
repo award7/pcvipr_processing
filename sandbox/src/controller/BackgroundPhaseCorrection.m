@@ -10,19 +10,22 @@ classdef BackgroundPhaseCorrection < handle
         
         function [mag_slice, vel_mag] = getSlices(args)
             arguments
+                % from vipr model
+                args.MAG;
+                args.velocity_mean;
+                args.velocity_encoding;
+                
+                % from bgpc model
+                args.apply_correction;
+                args.image;
                 args.vmax;
                 args.noise_threshold;
-                args.MAG; % pass in the fs?
-                args.image;
-                args.velocity_mean; % pass in the fs?
-                args.apply_correction;
+                args.cd_threshold;
                 args.poly_fit_x;
                 args.poly_fit_y;
                 args.poly_fit_z;
-                args.cd_threshold;
-                args.velocity_encoding;
             end
-            
+
             rczres = size(args.MAG, 3);
             slice = 1 + floor(args.image * (rczres-1));
             
@@ -37,11 +40,11 @@ classdef BackgroundPhaseCorrection < handle
             zrange = single(linspace(-1, 1, size(args.velocity_mean, 1))); % TODO: check if the indexes are correct as they differ from line 90
             
             % Range
-            if args.apply_correction == 1
+            if args.apply_correction
                 [y, x, z] = meshgrid(yrange, xrange, zrange(slice));    
-                vx_slice = vx_slice - self.evaluate_poly(x, y, z, args.poly_fit_x);
-                vy_slice = vy_slice - self.evaluate_poly(x, y, z, args.poly_fit_y);
-                vz_slice = vz_slice - self.evaluate_poly(x, y, z, args.poly_fit_z);
+                vx_slice = vx_slice - BackgroundPhaseCorrection.evaluatePoly(x, y, z, args.poly_fit_x);
+                vy_slice = vy_slice - BackgroundPhaseCorrection.evaluatePoly(x, y, z, args.poly_fit_y);
+                vz_slice = vz_slice - BackgroundPhaseCorrection.evaluatePoly(x, y, z, args.poly_fit_z);
             end
             
             vmag = sqrt(vx_slice.^2 + vy_slice.^2 + + vz_slice.^2);
@@ -235,7 +238,7 @@ classdef BackgroundPhaseCorrection < handle
     % misc static methods
     methods (Static, Access = private)
         
-        function val = evaluate_poly(x, y, z, fit)
+        function val = evaluatePoly(x, y, z, fit)
             val = 0;
             for k = 1:numel(fit.px)
                 val = val + fit.vals(k)*(x.^fit.px(k).*y.^fit.py(k).*z.^fit.pz(k));
