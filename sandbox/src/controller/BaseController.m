@@ -140,12 +140,12 @@ classdef BaseController < handle
             
             % create progress bar for enhancing UX
             msg = 'Preparing Background Phase Correction';
-            ProgressBarView(self.BaseView.UIFigure, ...
-                            'Message', msg, ...
-                            'Indeterminate', 'on', ...
-                            'Cancelable', 'on', ...
-                            'Pause', 'on', ...
-                            'Duration', 5);
+            dlg = ProgressBarView(self.BaseView.UIFigure, ...
+                                'Message', msg, ...
+                                'Indeterminate', 'on', ...
+                                'Cancelable', 'off', ...
+                                'Pause', 'on', ...
+                                'Duration', 5);
             
             if isempty(self.BackgroundPhaseCorrectionModel)
                 % assign the BackgroundPhaseCorrectionModel object to the BackgroundPhaseCorrectionModel property of this class
@@ -154,23 +154,43 @@ classdef BaseController < handle
 
             % create view
             view = BackgroundPhaseCorrectionView(self);
-            self.BackgroundPhaseCorrectionModel.initMagImage(view.MagAxes);
-            self.BackgroundPhaseCorrectionModel.initVelocityImage(view.VelocityAxes);
             
-            % load data from filestores to datastores
-            % change iteration dimensions within individual callbacks
-            % before passing to bgpc methods
-            self.ViprModel.MagFS.reset;
-            self.ViprModel.setMagDS(arrayDatastore(self.ViprModel.MagFS.read, 'IterationDimension', 3));
+            % initialize some parameters
+            poly_fit = BackgroundPhaseCorrection.resetFit;
+            self.BackgroundPhaseCorrectionModel.setPolyFit(poly_fit);
             
+            img = self.BackgroundPhaseCorrectionModel.WhiteImage();
+            BackgroundPhaseCorrection.initImage(view.MagAxes, img);
+            BackgroundPhaseCorrection.initImage(view.VelocityAxes, img);
+            
+            %%% get these datastores into memory for faster viewing of
+            %%% images
+            % allocate velocity mean array and read data from filestore
+            res = self.ViprModel.Resolution;
+            velocity_mean = zeros(res,res,res,3);
             self.ViprModel.VelocityMeanFS.reset;
-            self.ViprModel.setVelocityMeanDS(arrayDatastore(self.ViprModel.VelocityMeanFS.read, 'IterationDimension', 4));
+            i = 1;
+            while self.ViprModel.VelocityMeanFS.hasdata
+                velocity_mean(:,:,:,i) = self.ViprModel.VelocityMeanFS.read();
+                i = i + 1;
+            end
+            self.ViprModel.setVelocityMeanArray(velocity_mean);
+            clear velocity_mean;
             
-            self.ViprModel.VelocityFS.reset;
-            self.ViprModel.setVelocityDS(arrayDatastore(self.ViprModel.VelocityFS.read, 'IterationDimension', 5));
+            % allocate MAG array and read MAG data from filestore
+            mag = zeros(res,res,res);
+            self.ViprModel.MagFS.reset;
+            while self.ViprModel.MagFS.hasdata
+                mag(:,:,:) = self.ViprModel.MagFS.read();
+            end
+            self.ViprModel.setMagArray(mag);
+            clear mag;
+            
+            self.bgpcUpdateImages(view);
             
             % change app state
             self.State = AppState.BackgroundPhaseCorrection;
+            dlg.close();
         end
         
         function drawROIMenuButtonCallback(self, src, evt)
@@ -329,18 +349,19 @@ classdef BaseController < handle
             end
             
             %%% get datastores
-            velocity_ds = LoadViprDS.getVelocityDataStore(velocity_fs);
-            velocity_mean_ds = LoadViprDS.getVelocityMeanDataStore(velocity_mean_fs);
-            mag_ds = LoadViprDS.getMagDataStore(mag_fs);
+%             velocity_ds = LoadViprDS.getVelocityDataStore(velocity_fs);
+%             velocity_mean_ds = LoadViprDS.getVelocityMeanDataStore(velocity_mean_fs);
+%             mag_ds = LoadViprDS.getMagDataStore(mag_fs);
+%             self.ViprModel.setVelocityDS(velocity_ds);
+%             self.ViprModel.setVelocityMeanDS(velocity_mean_ds);
+%             self.ViprModel.setMagDS(mag_ds);
             
             %%% set model values
             self.ViprModel.setDataDirectory(data_directory);
             self.ViprModel.setVelocityFS(velocity_fs);
             self.ViprModel.setVelocityMeanFS(velocity_mean_fs);
             self.ViprModel.setMagFS(mag_fs);
-            self.ViprModel.setVelocityDS(velocity_ds);
-            self.ViprModel.setVelocityMeanDS(velocity_mean_ds);
-            self.ViprModel.setMagDS(mag_ds);
+            
             self.ViprModel.setFOV(vipr_struct.fovx/10);
             self.ViprModel.setTimeResolution(vipr_struct.timeres);
             self.ViprModel.setNoFrames(vipr_struct.frames);
@@ -481,7 +502,7 @@ classdef BaseController < handle
             end
 
             self.BackgroundPhaseCorrectionModel.setImage(value);
-            self.bgpcUpdateImages();
+            self.bgpcUpdateImages(src);
         end
         
         function bgpcVmaxValueChangedCallback(self, src, evt)
@@ -573,7 +594,8 @@ classdef BaseController < handle
             args.poly_fit_x;
             args.poly_fit_y;
             args.poly_fit_z;
-            [velocity, velocity_mean] = BackgroundPhaseCorrection.polyCorrection();
+            args_array = namedargs2cell(args);
+            correction_factor = BackgroundPhaseCorrection.polyCorrection(args_array{:});
             % time_mip = CalculateAngiogram.calculate_angiogram();
             % [~, segment] = CalculateSegment();
         end
@@ -770,42 +792,25 @@ classdef BaseController < handle
     % bgpc methods
     methods (Access = private)
         
-        function bgpcUpdateImages(self)
-            %%% load data from datastores
-            % MAG data
-            self.ViprModel.MagDS.reset;
-            sz = self.ViprModel.Resolution;
-            mag = zeros(sz,sz,sz);
-            while self.ViprModel.MagDS.hasdata
-                mag(:,:,:) = cell2mat(self.ViprModel.MagDS.read);
-            end
-            
-            % velocity mean data
-            self.ViprModel.VelocityMeanDS.reset;
-            velocity_mean = zeros(sz,sz,sz);
-            j = 1;
-            while self.ViprModel.VelocityMeanDS.hasdata
-                velocity_mean(:,:,:,j) = cell2mat(self.ViprModel.VelocityMeanDS.read);
-                j = j + 1;
-            end
-            
-            %%% package variables into struct
-            args.MAG = mag;
-            args.velocity_mean = velocity_mean;
+        function bgpcUpdateImages(self, view)            
+            % package variables into struct
+            args.mag = self.ViprModel.MagArray;
+            args.velocity_mean = self.ViprModel.VelocityMeanArray;
             args.velocity_encoding = self.ViprModel.VelocityEncoding;
+            args.resolution = self.ViprModel.Resolution;
             args.apply_correction = self.BackgroundPhaseCorrectionModel.ApplyCorrection;
             args.image = self.BackgroundPhaseCorrectionModel.Image;
             args.vmax = self.BackgroundPhaseCorrectionModel.Vmax;
             args.noise_threshold = self.BackgroundPhaseCorrectionModel.NoiseThreshold;
             args.cd_threshold = self.BackgroundPhaseCorrectionModel.CDThreshold;
-            args.poly_fit_x = self.BackgroundPhaseCorrectionModel.PolyFitX;
-            args.poly_fit_y = self.BackgroundPhaseCorrectionModel.PolyFitY;
-            args.poly_fit_z = self.BackgroundPhaseCorrectionModel.PolyFitZ;
+            args.poly_fit = self.BackgroundPhaseCorrectionModel.PolyFit;
             
             args_array = namedargs2cell(args);
             [mag_slice, velocity_slice] = BackgroundPhaseCorrection.getSlices(args_array{:});
             self.BackgroundPhaseCorrectionModel.setMagImageCData(mag_slice);
             self.BackgroundPhaseCorrectionModel.setVelocityImageCData(velocity_slice);
+            view.MagAxes.Children.CData = self.BackgroundPhaseCorrectionModel.MagImage.CData();
+            view.VelocityAxes.Children.CData = self.BackgroundPhaseCorrectionModel.VelocityImage.CData();
         end
         
     end
