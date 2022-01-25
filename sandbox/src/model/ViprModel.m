@@ -28,6 +28,8 @@ classdef ViprModel < handle
         % they could be written to disk and a filestore created...
         TimeMip;
         Segment;
+        BranchList;
+        BranchMat;
     end
     
     % vipr processing parameters
@@ -208,6 +210,22 @@ classdef ViprModel < handle
                 val;
             end
             self.Segment = val;
+        end
+        
+        function setBranchMat(self, val)
+            arguments
+                self;
+                val;
+            end
+            self.BranchMat = val;
+        end
+        
+        function setBranchList(self, val)
+            arguments
+                self;
+                val;
+            end
+            self.BranchList = val;
         end
         
     end
