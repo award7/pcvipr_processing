@@ -26,6 +26,7 @@ classdef ViprModel < handle
         
         % these arrays persist after creation
         % they could be written to disk and a filestore created...
+        CorrectionFactor;
         TimeMip;
         Segment;
         BranchList;
@@ -194,6 +195,14 @@ classdef ViprModel < handle
                 val;
             end
             self.MagArray = val;
+        end
+        
+        function setCorrectionFactor(self, val)
+            arguments
+                self;
+                val;
+            end
+            self.CorrectionFactor = val;
         end
         
         function setTimeMip(self, val)

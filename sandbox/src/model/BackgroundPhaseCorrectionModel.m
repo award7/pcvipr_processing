@@ -11,11 +11,7 @@ classdef BackgroundPhaseCorrectionModel < handle
         VelocityImage;
         PolyFit = struct;
     end
-    
-    properties (GetAccess = public, SetAccess = private)
-        CorrectionFactor;
-    end
-    
+
     properties (Access = {?BaseController, ?BackgroundPhaseCorrectionView}, Dependent)
         Map;
         WhiteImage;
@@ -131,14 +127,6 @@ classdef BackgroundPhaseCorrectionModel < handle
                 val {mustBeA(val, 'struct')};
             end
             self.PolyFit = val;
-        end
-        
-        function setCorrectionFactor(self, val)
-            arguments
-                self;
-                val;
-            end
-            self.CorrectionFactor = val;
         end
         
     end
