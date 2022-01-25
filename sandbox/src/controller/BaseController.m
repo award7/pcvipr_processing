@@ -578,16 +578,18 @@ classdef BaseController < handle
         end
         
         function bgpcDoneButtonPushed(self, src, evt)
+            % disp("Correcting polynomial...");
+            
             % get args for poly_correction
-            % args.MAG = self.ViprModel.;
-            args.velocity;
-            args.velocity_mean;
-            args.no_frames;
-            args.poly_fit_x;
-            args.poly_fit_y;
-            args.poly_fit_z;
+            args.mag = self.ViprModel.MagArray;
+            args.velocity = '';
+            args.velocity_mean = '';
+            args.no_frames = self.ViprModel.NoFrames;
+            args.poly_fit = self.BackgroundPhaseCorrectionModel.PolyFit;
+            
             args_array = namedargs2cell(args);
             correction_factor = BackgroundPhaseCorrection.polyCorrection(args_array{:});
+            self.BackgroundPhaseCorrectionModel.setCorrectionFactor(correction_factor);
             % time_mip = CalculateAngiogram.calculate_angiogram();
             % [~, segment] = CalculateSegment();
         end
