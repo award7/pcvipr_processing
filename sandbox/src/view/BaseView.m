@@ -132,24 +132,28 @@ classdef BaseView < matlab.apps.AppBase
         function createViewFullVasculatureMenuButton(app, controller)
             app.ViewFullVasculatureMenuButton = uimenu(app.AnalysisMenu);
             app.ViewFullVasculatureMenuButton.Text = 'View Full Vasculature';
+            app.ViewFullVasculatureMenuButton.Tag = AppState.FullVasculature;
             app.ViewFullVasculatureMenuButton.MenuSelectedFcn = createCallbackFcn(app, @controller.viewFullVasculatureMenuButtonCallback, true);
         end
         
         function createBackgroundPhaseCorrectionMenuButton(app, controller)
             app.BackgroundPhaseCorrectionMenuButton = uimenu(app.AnalysisMenu);
             app.BackgroundPhaseCorrectionMenuButton.Text = 'Perform Background Phase Correction';
+            app.BackgroundPhaseCorrectionMenuButton.Tag = AppState.BackgroundPhaseCorrection;
             app.BackgroundPhaseCorrectionMenuButton.MenuSelectedFcn = createCallbackFcn(app, @controller.backgroundPhaseCorrectionMenuButtonCallback, true);
         end
         
         function createDrawROIMenuButton(app, controller)
             app.DrawROIMenuButton = uimenu(app.AnalysisMenu);
             app.DrawROIMenuButton.Text = 'Draw ROI';
+            app.DrawROIMenuButton.Tag = AppState.ROI;
             app.DrawROIMenuButton.MenuSelectedFcn = createCallbackFcn(app, @controller.drawROIMenuButtonCallback, true);
         end
         
         function createViewParametricMapMenuButton(app, controller)
             app.ViewParametricMapMenuButton = uimenu(app.AnalysisMenu);
             app.ViewParametricMapMenuButton.Text = 'View Parametric Map';
+            app.ViewParametricMapMenuButton.Tag = AppState.ParametricMap;
             app.ViewParametricMapMenuButton.MenuSelectedFcn = createCallbackFcn(app, @controller.viewParametricMapMenuButtonCallback, true);
         end
         
@@ -162,6 +166,7 @@ classdef BaseView < matlab.apps.AppBase
         function createVesselSelectionMenuButton(app, controller)
             app.VesselSelectionMenuButton = uimenu(app.AnalysisMenu);
             app.VesselSelectionMenuButton.Text = 'Select Vessels';
+            app.VesselSelectionMenuButton.Tag = AppState.VesselSelect;
             app.VesselSelectionMenuButton.MenuSelectedFcn = createCallbackFcn(app, @controller.vesselSelectionMenuButtonCallback, true);
         end
         
@@ -174,12 +179,14 @@ classdef BaseView < matlab.apps.AppBase
         function createVessel3dMenuButton(app, controller)
             app.Vessel3dMenuButton = uimenu(app.AnalysisMenu);
             app.Vessel3dMenuButton.Text = 'View Vessels 3D';
+            app.Vessel3dMenuButton.Tag = AppState.Vessel3D;
             app.Vessel3dMenuButton.MenuSelectedFcn = createCallbackFcn(app, @controller.vessel3dMenuButtonCallback, true);
         end
         
         function createParameterPlotMenuButton(app, controller)
             app.ParameterPlotMenuButton = uimenu(app.AnalysisMenu);
             app.ParameterPlotMenuButton.Text = 'View Parameter Plot';
+            app.ParameterPlotMenuButton.Tag = AppState.ParameterPlot;
             app.ParameterPlotMenuButton.MenuSelectedFcn = createCallbackFcn(app, @controller.parameterPlotMenuButtonCallback, true);
         end
         
