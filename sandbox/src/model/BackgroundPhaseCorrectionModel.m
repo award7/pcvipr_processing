@@ -1,6 +1,6 @@
 classdef BackgroundPhaseCorrectionModel < handle
     
-    properties (GetAccess = public, SetAccess = private)
+    properties (GetAccess = {?BaseController, ?BackgroundPhaseCorrectionView}, SetAccess = private)
         Image = 0.5;
         Vmax = 0.1;
         CDThreshold = 0.15;
@@ -12,7 +12,11 @@ classdef BackgroundPhaseCorrectionModel < handle
         PolyFit = struct;
     end
     
-    properties (Dependent)
+    properties (GetAccess = public, SetAccess = private)
+        CorrectionFactor;
+    end
+    
+    properties (Access = {?BaseController, ?BackgroundPhaseCorrectionView}, Dependent)
         Map;
         WhiteImage;
     end
@@ -39,7 +43,7 @@ classdef BackgroundPhaseCorrectionModel < handle
     end
     
     % setters
-    methods
+    methods (Access = {?BaseController, ?BackgroundPhaseCorrectionModel})
         
         function setImage(self, val)
             arguments
@@ -127,6 +131,14 @@ classdef BackgroundPhaseCorrectionModel < handle
                 val {mustBeA(val, 'struct')};
             end
             self.PolyFit = val;
+        end
+        
+        function setCorrectionFactor(self, val)
+            arguments
+                self;
+                val;
+            end
+            self.CorrectionFactor = val;
         end
         
     end
