@@ -6,9 +6,12 @@ classdef BackgroundPhaseCorrectionModel < handle
         CDThreshold = 0.15;
         NoiseThreshold = 0.15;
         FitOrder = 2;
-        ApplyCorrection = 1;
+        ApplyCorrection = true;
         MagImage;
         VelocityImage;
+        PolyFitX = struct;
+        PolyFitY = struct;
+        PolyFitZ = struct;
     end
     
     properties (Dependent)
@@ -24,6 +27,7 @@ classdef BackgroundPhaseCorrectionModel < handle
         
     end
     
+    % TODO: move to controller
     % initialization of images
     methods (Access = public)
         
