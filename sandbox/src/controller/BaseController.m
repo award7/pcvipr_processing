@@ -542,6 +542,8 @@ classdef BaseController < handle
                             'Pause', 'off');
             
             %%% create mask
+            dlg.Message = "Creating Angiogram";
+            
             % from vipr model
             args.mag = self.ViprModel.MagArray;
             args.velocity_mean = self.ViprModel.VelocityMeanArray;
@@ -556,6 +558,8 @@ classdef BaseController < handle
             clear args;
             
             %%% perform poly fit
+            dlg.Message = "Fitting Polynomials";
+            
             % from vipr model
             args.velocity_mean = self.ViprModel.VelocityMeanArray;
             
@@ -578,20 +582,46 @@ classdef BaseController < handle
         end
         
         function bgpcDoneButtonPushed(self, src, evt)
-            % disp("Correcting polynomial...");
-            
-            % get args for poly_correction
+            % create progress bar for enhancing UX
+            msg = "Correcting Polynomial";
+            dlg = ProgressBarView(self.BaseView.UIFigure, ...
+                            'Message', msg, ...
+                            'Indeterminate', 'on', ...
+                            'Cancelable', 'off', ...
+                            'Pause', 'off');
+                        
+            %%% poly correction
             args.mag = self.ViprModel.MagArray;
-            args.velocity = '';
-            args.velocity_mean = '';
             args.no_frames = self.ViprModel.NoFrames;
             args.poly_fit = self.BackgroundPhaseCorrectionModel.PolyFit;
             
             args_array = namedargs2cell(args);
             correction_factor = BackgroundPhaseCorrection.polyCorrection(args_array{:});
             self.BackgroundPhaseCorrectionModel.setCorrectionFactor(correction_factor);
-            % time_mip = CalculateAngiogram.calculate_angiogram();
-            % [~, segment] = CalculateSegment();
+            clear args;
+            
+            %%% calculate time MIP
+            dlg.Message = "Calculating Max Intensity Projection";
+            args.mag = self.ViprModel.MagArray;
+            args.velocity_mean = self.ViprModel.VelocityMeanArray;
+            args.velocity_encoding = self.ViprModel.VelocityEncoding;
+            
+            args_array = namedargs2cell(args);
+            time_mip = BackgroundPhaseCorrection.calculateAngiogram(args_array{:});
+            self.ViprModel.setTimeMip(time_mip);
+            clear args;
+            
+            %%% calculate segment
+            dlg.Message = "Calculating Segment";
+            args.time_mip = time_mip;
+            args.resolution = self.ViprModel.Resolution;
+            args_array = namedargs2cell(args);
+            
+            segment = BackgroundPhaseCorrection.calculateSegment(args_array{:});
+            self.ViprModel.setSegment(segment);
+            
+            %%% close dialog
+            dlg.close();
         end
 
     end
