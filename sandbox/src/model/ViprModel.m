@@ -23,6 +23,11 @@ classdef ViprModel < handle
         VelocityArray;
         VelocityMeanArray;
         MagArray;
+        
+        % these arrays persist after creation
+        % they could be written to disk and a filestore created...
+        TimeMip;
+        Segment;
     end
     
     % vipr processing parameters
@@ -187,6 +192,22 @@ classdef ViprModel < handle
                 val;
             end
             self.MagArray = val;
+        end
+        
+        function setTimeMip(self, val)
+            arguments
+                self;
+                val;
+            end
+            self.TimeMip = val;
+        end
+        
+        function setSegment(self, val)
+            arguments
+                self;
+                val;
+            end
+            self.Segment = val;
         end
         
     end
