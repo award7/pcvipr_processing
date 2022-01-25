@@ -1,18 +1,18 @@
 classdef BackgroundPhaseCorrectionView < matlab.apps.AppBase
     
     % base figure
-    properties (Access = public)
+    properties (Access = {?BaseController, ?BackgroundPhaseCorrectionView})
         UIFigure    matlab.ui.Figure;
     end
     
     % axes
-    properties
+    properties (Access = {?BaseController, ?BackgroundPhaseCorrectionView})
         MagAxes         matlab.ui.control.UIAxes
         VelocityAxes    matlab.ui.control.UIAxes
     end
    
     % sliders
-    properties
+    properties (Access = {?BaseController, ?BackgroundPhaseCorrectionView})
         ImageSlider                 matlab.ui.control.Slider
         VmaxSlider                  matlab.ui.control.Slider
         CDSlider                    matlab.ui.control.Slider
@@ -21,7 +21,7 @@ classdef BackgroundPhaseCorrectionView < matlab.apps.AppBase
     end
     
     % spinners
-    properties 
+    properties (Access = {?BaseController, ?BackgroundPhaseCorrectionView})
         ImageSpinner            matlab.ui.control.Spinner
         VmaxSpinner             matlab.ui.control.Spinner
         CDSpinner               matlab.ui.control.Spinner
@@ -30,7 +30,7 @@ classdef BackgroundPhaseCorrectionView < matlab.apps.AppBase
     end
     
     % constructor
-    methods (Access = public)
+    methods (Access = ?BaseController)
         
         function app = BackgroundPhaseCorrectionView(controller)
             app.UIFigure = controller.BaseView.UIFigure;
