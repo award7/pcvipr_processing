@@ -109,62 +109,77 @@ classdef BaseController < handle
         end
         
         %%% analysis menu
-        function viewFullVasculatureMenuButtonCallback(self, src, evt)
-            % display full vasculature
+        function viewButtonCallback(self, src, evt)
+            % wrapper method for independent view methods
+            
             % don't reload if it's currently in this state
-            new_state = 'FullVasculature';
+            new_state = evt.Source.Tag;
             if strcmp(self.State, new_state)
                 return;
             end
             
+            % build custom dialog message based on the view
+            % and get fcn handle to specific view method
+            switch new_state
+                case AppState.BackgroundPhaseCorrection
+                    msg = 'Preparing Background Phase Correction';
+                    fcn = @self.backgroundPhaseCorrectionMenuButtonCallback;
+                case AppState.FullVasculature
+                    msg = 'Building Full Vascular Angiogram';
+                    fcn = @self.viewFullVasculatureMenuButtonCallback;
+                case AppState.ParameterPlot
+                    msg = 'Plotting Vessel Parameters';
+                    fcn = @self.parameterPlotMenuButtonCallback;
+                case AppState.ParametricMap
+                    msg = 'View Parametric Map: Not Implemented';
+                    fcn = @self.viewParametricMapMenuButtonCallback;
+                case AppState.ROI
+                    msg = 'Draw ROI: Not Implemented';
+                    fcn = @self.drawROIMenuButtonCallback;
+                case AppState.Vessel3D
+                    msg = 'Reconstructing Segmented Vessels in 3D';
+                    fcn = @self.vessel3dMenuButtonCallback;
+                case AppState.VesselSelect
+                    msg = 'Reconstructing MR Images';
+                    fcn = @self.vesselSelectionMenuButtonCallback;
+            end
+
             % create progress bar for enhancing UX
-            msg = 'Building Full Vascular Angiogram';
             dlg = ProgressBarView(self.BaseView.UIFigure, ...
                             'Message', msg, ...
                             'Indeterminate', 'on', ...
-                            'Cancelable', 'on', ...
+                            'Cancelable', 'off', ...
                             'Pause', 'on', ...
                             'Duration', 5);
-            % create view
-            % TODO: call view
+            
+            % clear memory if needed
+            self.freeMemory(new_state);
+            
+            %%% call the specific view method
+            fcn(src, evt);
             
             % change app state
             self.State = AppState.(new_state);
             dlg.close();
         end
         
+        function viewFullVasculatureMenuButtonCallback(self, src, evt)
+            % display full vasculature
+        end
+        
         function backgroundPhaseCorrectionMenuButtonCallback(self, src, evt)
             % display background phase correction images and widgets
-            % don't reload if it's currently in this state
-            new_state = 'BackgroundPhaseCorrection';
-            if strcmp(self.State, new_state)
-                return;
-            end
-            
-            % create progress bar for enhancing UX
-            msg = 'Preparing Background Phase Correction';
-            dlg = ProgressBarView(self.BaseView.UIFigure, ...
-                                'Message', msg, ...
-                                'Indeterminate', 'on', ...
-                                'Cancelable', 'off', ...
-                                'Pause', 'on', ...
-                                'Duration', 5);
-            
-            % clear memory if needed
-            self.clearMemory(new_state);
-            
             if isempty(self.BackgroundPhaseCorrectionModel)
                 % assign the BackgroundPhaseCorrectionModel object to the BackgroundPhaseCorrectionModel property of this class
                 self.BackgroundPhaseCorrectionModel = BackgroundPhaseCorrectionModel();
+                poly_fit = BackgroundPhaseCorrection.resetFit;
+                self.BackgroundPhaseCorrectionModel.setPolyFit(poly_fit);
             end
 
             % create view
             view = BackgroundPhaseCorrectionView(self);
             
             % initialize some parameters
-            poly_fit = BackgroundPhaseCorrection.resetFit;
-            self.BackgroundPhaseCorrectionModel.setPolyFit(poly_fit);
-            
             img = self.BackgroundPhaseCorrectionModel.WhiteImage();
             BackgroundPhaseCorrection.initImage(view.MagAxes, img);
             BackgroundPhaseCorrection.initImage(view.VelocityAxes, img);
@@ -193,14 +208,11 @@ classdef BaseController < handle
             clear mag;
             
             self.bgpcUpdateImages(view);
-            
-            % change app state
-            self.State = AppState.(new_state);
-            dlg.close();
         end
         
         function drawROIMenuButtonCallback(self, src, evt)
             % todo: show error dialog 'Not Implemented'
+            self.State = AppState.ROI;
         end
         
         function viewParametricMapMenuButtonCallback(self, src, evt)
@@ -209,7 +221,7 @@ classdef BaseController < handle
         end
         
         function featureExtractionMenuButtonCallback(self, src, evt)
-            
+            % TODO: implement
         end
         
         function vesselSelectionMenuButtonCallback(self, src, evt)
@@ -828,6 +840,7 @@ classdef BaseController < handle
             % certain views require large data arrays loaded into memory
             % when changing a view that doesn't require such, free up
             % memory by deleting those arrays
+            % TODO: delete images too
             arguments
                 self;
                 new_state;
@@ -839,9 +852,9 @@ classdef BaseController < handle
                 ];
             
             if ~any(new_state == states_with_large_arrays)
-                self.ViprModel.VelocityArray = [];
-                self.ViprModel.VelocityMeanArray = [];
-                self.ViprModel.MagArray = [];
+                self.ViprModel.setVelocityArray([]);
+                self.ViprModel.setVelocityMeanArray([]);
+                self.ViprModel.setMagArray([]);
             end
         end
         
