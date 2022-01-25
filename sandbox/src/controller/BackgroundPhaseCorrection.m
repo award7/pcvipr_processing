@@ -1,11 +1,6 @@
 classdef BackgroundPhaseCorrection < handle
     % methods for applying background phase correction to PC VIPR data
-    % TODO: make naming conventions consistent
-        % PascalCase for properties
-        % camelCase for methods
-        % snake_case for local variables
-    % TODO: add validations to properties   
-   
+
     methods (Access = ?BaseController, Static)
         
         function [mag_slice, vel_mag] = getSlices(args)
@@ -15,7 +10,6 @@ classdef BackgroundPhaseCorrection < handle
                 args.mag;
                 args.velocity_mean;
                 args.velocity_encoding;
-                args.resolution;
                 
                 % from bgpc model
                 args.apply_correction;
@@ -99,22 +93,47 @@ classdef BackgroundPhaseCorrection < handle
             correction_factor = single(correction_factor);
         end
 
+        function poly_fit = resetFit()
+            % called from "Reset Fit" and during initialization
+            poly_fit = struct;
+            parent_fields = ["x", "y", "z"];
+            child_fields = ["px", "py", "pz", "vals"];
+            
+            for parent = parent_fields
+                for child = child_fields
+                    poly_fit.(parent).(child) = 0;
+                end
+            end
+        end
+
+        function img = initImage(parent, img)
+            arguments
+                parent;
+                img;
+            end
+            img = imagesc(parent, 'CData', img, [0 210]);
+        end
+        
+    end
+    
+    % methods called only from "Update"
+    methods (Access = ?BaseController, Static)
+        
         function mask = createAngiogram(args)
-            % called only from "Update"
             arguments
                 % TODO: add validations?
-                args.MAG;
+                args.mag;
                 args.velocity_mean;
                 args.velocity_encoding;
                 args.noise_threshold;
                 args.cd_threshold;
             end
             
-            mask = int8(zeros(size(args.MAG)));
-            max_MAG = max(args.MAG(:));
+            mask = int8(zeros(size(args.mag)));
+            max_MAG = max(args.mag(:));
             for slice = 1:size(mask, 3)
                 % Grab a slice
-                mag_slice = single(args.MAG(:,:,slice));
+                mag_slice = single(args.mag(:,:,slice));
                 vx_slice = single(args.velocity_mean(:,:,slice));
                 vy_slice = single(args.velocity_mean(:,:,slice));
                 vz_slice = single(args.velocity_mean(:,:,slice));
@@ -124,47 +143,34 @@ classdef BackgroundPhaseCorrection < handle
             end
         end
         
-        function poly_fit = ployFit3d(args)
-            %{
-            only called from "update" in the view
-            pass in name-value pairs for clarity
-            %}
+        function poly_fit = polyFit3d(args)
+            % pass in name-value pairs for clarity
             arguments
                 % TODO: add validations
-                args.velocity_mean_fs;
+                args.velocity_mean;
                 args.fit_order;
                 args.mask;
-                args.resolution
-            end
-            
-            % allocate velocity mean array and read data from filestore
-            velocity_mean = zeros(args.resolution,args.resolution,args.resolution,3);
-            args.velocity_mean_fs.reset;
-            i = 1;
-            while args.velocity_mean_fs.hasdata
-                velocity_mean(:,:,:,i) = args.velocity_mean_fs.read();
-                i = i + 1;
             end
             
             % Lots of memory problems with vectorization!!! solve Ax = B by (A^hA) x = (A^h *b)
             if args.fit_order == 0
                 % vx
-                args.poly_fit.x.vals  = mean(velocity_mean(:,:,:,1));
-                args.poly_fit.x.px = 0;
-                args.poly_fit.x.py = 0;
-                args.poly_fit.x.pz = 0;
+                poly_fit.x.vals  = mean(args.velocity_mean(:,:,:,1));
+                poly_fit.x.px = 0;
+                poly_fit.x.py = 0;
+                poly_fit.x.pz = 0;
             
                 % vy
-                args.poly_fit.y.vals  = mean(velocity_mean(:,:,:,2));
-                args.poly_fit.y.px = 0;
-                args.poly_fit.y.py = 0;
-                args.poly_fit.y.pz = 0;
+                poly_fit.y.vals  = mean(args.velocity_mean(:,:,:,2));
+                poly_fit.y.px = 0;
+                poly_fit.y.py = 0;
+                poly_fit.y.pz = 0;
             
                 % vz
-                args.poly_fit.z.vals  = mean(velocity_mean(:,:,:,3));
-                args.poly_fit.z.px = 0;
-                args.poly_fit.z.py = 0;
-                args.poly_fit.z.pz = 0;
+                poly_fit.z.vals  = mean(args.velocity_mean(:,:,:,3));
+                poly_fit.z.px = 0;
+                poly_fit.z.py = 0;
+                poly_fit.z.pz = 0;
             else
                 [px, py, pz] = meshgrid(0:args.fit_order, 0:args.fit_order, 0:args.fit_order);
                 idx2 = find((px+py+pz) <= args.fit_order);
@@ -185,9 +191,9 @@ classdef BackgroundPhaseCorrection < handle
                 
                 % TODO: refactor for parfor?
                 for slice = 1:numel(zrange)
-                    vx_slice = single(velocity_mean(:,:,slice,1));
-                    vy_slice = single(velocity_mean(:,:,slice,2));
-                    vz_slice = single(velocity_mean(:,:,slice,3));
+                    vx_slice = single(args.velocity_mean(:,:,slice,1));
+                    vy_slice = single(args.velocity_mean(:,:,slice,2));
+                    vz_slice = single(args.velocity_mean(:,:,slice,3));
                     
                     [y,x,z] = meshgrid(yrange, xrange, zrange(slice));
                     idx = find(args.mask(:,:,slice) > 0);
@@ -227,31 +233,6 @@ classdef BackgroundPhaseCorrection < handle
                 poly_fit.z.py = py;
                 poly_fit.z.pz = pz;
             end
-        end
-        
-        function poly_fit = resetFit()
-            % called from "Reset Fit" and during initialization
-            poly_fit = struct;
-            parent_fields = ["x", "y", "z"];
-            child_fields = ["px", "py", "pz", "vals"];
-            
-            for parent = parent_fields
-                for child = child_fields
-                    poly_fit.(parent).(child) = 0;
-                end
-            end
-        end
-
-    end
-    
-    methods (Access = public, Static)
-        
-        function img = initImage(parent, img)
-            arguments
-                parent;
-                img;
-            end
-            img = imagesc(parent, 'CData', img, [0 210]);
         end
         
     end
