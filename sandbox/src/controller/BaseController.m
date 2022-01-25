@@ -112,13 +112,14 @@ classdef BaseController < handle
         function viewFullVasculatureMenuButtonCallback(self, src, evt)
             % display full vasculature
             % don't reload if it's currently in this state
-            if strcmp(self.State, 'FullVasculature')
+            new_state = 'FullVasculature';
+            if strcmp(self.State, new_state)
                 return;
             end
             
             % create progress bar for enhancing UX
             msg = 'Building Full Vascular Angiogram';
-            ProgressBarView(self.BaseView.UIFigure, ...
+            dlg = ProgressBarView(self.BaseView.UIFigure, ...
                             'Message', msg, ...
                             'Indeterminate', 'on', ...
                             'Cancelable', 'on', ...
@@ -128,13 +129,15 @@ classdef BaseController < handle
             % TODO: call view
             
             % change app state
-            self.State = AppState.FullVasculature;
+            self.State = AppState.(new_state);
+            dlg.close();
         end
         
         function backgroundPhaseCorrectionMenuButtonCallback(self, src, evt)
             % display background phase correction images and widgets
             % don't reload if it's currently in this state
-            if strcmp(self.State, 'BackgroundPhaseCorrection')
+            new_state = 'BackgroundPhaseCorrection';
+            if strcmp(self.State, new_state)
                 return;
             end
             
@@ -146,6 +149,9 @@ classdef BaseController < handle
                                 'Cancelable', 'off', ...
                                 'Pause', 'on', ...
                                 'Duration', 5);
+            
+            % clear memory if needed
+            self.clearMemory(new_state);
             
             if isempty(self.BackgroundPhaseCorrectionModel)
                 % assign the BackgroundPhaseCorrectionModel object to the BackgroundPhaseCorrectionModel property of this class
@@ -189,7 +195,7 @@ classdef BaseController < handle
             self.bgpcUpdateImages(view);
             
             % change app state
-            self.State = AppState.BackgroundPhaseCorrection;
+            self.State = AppState.(new_state);
             dlg.close();
         end
         
@@ -817,6 +823,27 @@ classdef BaseController < handle
     
     % helper methods
     methods (Access = private)
+        
+        function freeMemory(self, new_state)
+            % certain views require large data arrays loaded into memory
+            % when changing a view that doesn't require such, free up
+            % memory by deleting those arrays
+            arguments
+                self;
+                new_state;
+            end
+            
+            states_with_large_arrays = [...
+                AppState.BackgroundPhaseCorrection,...
+                AppState.VesselSelect...
+                ];
+            
+            if ~any(new_state == states_with_large_arrays)
+                self.ViprModel.VelocityArray = [];
+                self.ViprModel.VelocityMeanArray = [];
+                self.ViprModel.MagArray = [];
+            end
+        end
         
         function setEditFieldEditable(self, view, fields, state)
             arguments
