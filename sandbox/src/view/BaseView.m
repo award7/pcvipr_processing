@@ -133,28 +133,28 @@ classdef BaseView < matlab.apps.AppBase
             app.ViewFullVasculatureMenuButton = uimenu(app.AnalysisMenu);
             app.ViewFullVasculatureMenuButton.Text = 'View Full Vasculature';
             app.ViewFullVasculatureMenuButton.Tag = string(AppState.FullVasculature);
-            app.ViewFullVasculatureMenuButton.MenuSelectedFcn = createCallbackFcn(app, @controller.viewFullVasculatureMenuButtonCallback, true);
+            app.ViewFullVasculatureMenuButton.MenuSelectedFcn = createCallbackFcn(app, @controller.viewButtonCallback, true);
         end
         
         function createBackgroundPhaseCorrectionMenuButton(app, controller)
             app.BackgroundPhaseCorrectionMenuButton = uimenu(app.AnalysisMenu);
             app.BackgroundPhaseCorrectionMenuButton.Text = 'Perform Background Phase Correction';
             app.BackgroundPhaseCorrectionMenuButton.Tag = string(AppState.BackgroundPhaseCorrection);
-            app.BackgroundPhaseCorrectionMenuButton.MenuSelectedFcn = createCallbackFcn(app, @controller.backgroundPhaseCorrectionMenuButtonCallback, true);
+            app.BackgroundPhaseCorrectionMenuButton.MenuSelectedFcn = createCallbackFcn(app, @controller.viewButtonCallback, true);
         end
         
         function createDrawROIMenuButton(app, controller)
             app.DrawROIMenuButton = uimenu(app.AnalysisMenu);
             app.DrawROIMenuButton.Text = 'Draw ROI';
             app.DrawROIMenuButton.Tag = string(AppState.ROI);
-            app.DrawROIMenuButton.MenuSelectedFcn = createCallbackFcn(app, @controller.drawROIMenuButtonCallback, true);
+            app.DrawROIMenuButton.MenuSelectedFcn = createCallbackFcn(app, @controller.viewButtonCallback, true);
         end
         
         function createViewParametricMapMenuButton(app, controller)
             app.ViewParametricMapMenuButton = uimenu(app.AnalysisMenu);
             app.ViewParametricMapMenuButton.Text = 'View Parametric Map';
             app.ViewParametricMapMenuButton.Tag = string(AppState.ParametricMap);
-            app.ViewParametricMapMenuButton.MenuSelectedFcn = createCallbackFcn(app, @controller.viewParametricMapMenuButtonCallback, true);
+            app.ViewParametricMapMenuButton.MenuSelectedFcn = createCallbackFcn(app, @controller.viewButtonCallback, true);
         end
         
         function createFeatureExtracctionMenuButton(app, controller)
@@ -167,7 +167,7 @@ classdef BaseView < matlab.apps.AppBase
             app.VesselSelectionMenuButton = uimenu(app.AnalysisMenu);
             app.VesselSelectionMenuButton.Text = 'Select Vessels';
             app.VesselSelectionMenuButton.Tag = string(AppState.VesselSelect);
-            app.VesselSelectionMenuButton.MenuSelectedFcn = createCallbackFcn(app, @controller.vesselSelectionMenuButtonCallback, true);
+            app.VesselSelectionMenuButton.MenuSelectedFcn = createCallbackFcn(app, @controller.viewButtonCallback, true);
         end
         
         function createSegmentVesselsMenuButton(app, controller)
@@ -180,14 +180,14 @@ classdef BaseView < matlab.apps.AppBase
             app.Vessel3dMenuButton = uimenu(app.AnalysisMenu);
             app.Vessel3dMenuButton.Text = 'View Vessels 3D';
             app.Vessel3dMenuButton.Tag = string(AppState.Vessel3D);
-            app.Vessel3dMenuButton.MenuSelectedFcn = createCallbackFcn(app, @controller.vessel3dMenuButtonCallback, true);
+            app.Vessel3dMenuButton.MenuSelectedFcn = createCallbackFcn(app, @controller.viewButtonCallback, true);
         end
         
         function createParameterPlotMenuButton(app, controller)
             app.ParameterPlotMenuButton = uimenu(app.AnalysisMenu);
             app.ParameterPlotMenuButton.Text = 'View Parameter Plot';
             app.ParameterPlotMenuButton.Tag = string(AppState.ParameterPlot);
-            app.ParameterPlotMenuButton.MenuSelectedFcn = createCallbackFcn(app, @controller.parameterPlotMenuButtonCallback, true);
+            app.ParameterPlotMenuButton.MenuSelectedFcn = createCallbackFcn(app, @controller.viewButtonCallback, true);
         end
         
         % data source menu
