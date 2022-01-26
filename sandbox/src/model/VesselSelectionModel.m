@@ -1,23 +1,54 @@
 classdef VesselSelectionModel < handle
     
+    % MAG data
+    properties
+        % fields of "R", "G", "B"
+        MAGrgb = struct;
+    end
+    
+    % MAGrgb color maps
+    properties (Dependent)
+        MAGrColorMap;
+        MAGgColorMap;
+        MAGbColorMap;
+    end
+    
     % slice data
     properties (GetAccess = public, SetAccess = private)
+        % TODO: refactor to store xyz components into a struct with first 
+        % order fields of "X", "Y", "Z" with secondary order "Value" and 
+        % "Max"
+        % e.g. Slice.X.Value = (current slice value)
+        Slice = struct;
         XSlice;
         YSlice;
         ZSlice;
-        
         XSliceMax;
         YSliceMax;
         ZSliceMax;
     end
     
+    % constants
+    properties (Constant)
+        AbsLowerBound = 1;
+    end
+    
+    % coordinates
     properties (GetAccess = public, SetAccess = private)
+        % TODO: refactor to store xyz components into a struct with first 
+        % order fields of "X", "Y", "Z"
+        % e.g. Coordinate.X = (current X coordinate value)
+        Coordinate = struct;
+        
         XCoordinate;
         YCoordinate;
         ZCoordinate;
     end
     
+    % image data
     properties (GetAccess = public, SetAccess = private)
+        % TODO: refactor these into a struct???
+        % e.g. Data.Sagittal, Image.Sagittal
         SagittalData;
         CoronalData;
         AxialData;
@@ -31,6 +62,26 @@ classdef VesselSelectionModel < handle
     methods (Access = public)
         
         function self = VesselSelectionModel()
+        end
+        
+    end
+    
+    % getters
+    methods
+        
+        function val = get.MAGrColorMap(self)
+            map = jet(255);
+            val = map(255,1)*255;
+        end
+        
+        function val = get.MAGgColorMap(self)
+            map = jet(255);
+            val = map(150,2)*150;
+        end
+        
+        function val = get.MAGbColorMap(self)
+            map = jet(255);
+            val = map(1,3)*1;
         end
         
     end
@@ -159,6 +210,16 @@ classdef VesselSelectionModel < handle
             self.ZCoordinate = val;
         end
         
+        function setMAGrgb(self, field, val)
+            arguments
+                self;
+                field {mustBeMember(field, {'R', 'G', 'B'})};
+                val;
+            end
+            
+            self.MAGrgb.(field) = val;
+        end
+
     end
     
 end
