@@ -1,77 +1,127 @@
 classdef VesselSelectionController < handle
-    
-    % Image creation and interactivity
-    methods (Access = private)
-        
-        % create images
-        function img = create_sagittal_image(app)
-            app.SagittalData = zeros(320,320,3,app.XSliceMax, 'uint8');
-            
-            % returns a 320x320x3 array
-            for slice = app.AbsLowerBound:app.XSliceMax
-                app.XSlice = slice;
-                app.SagittalData(:,:,:,slice) = permute(cat(1, app.MAGR(app.XSlice,:,:), ...
-                                                               app.MAGG(app.XSlice,:,:), ...
-                                                               app.MAGB(app.XSlice,:,:)), ...
-                                                               [3 2 1]);
-            end
-            
-            app.init_slices()
-            img = app.SagittalData(:, :, :, app.XSlice);
-            sz = size(img, 1);
-            img = insertText(img, [sz/2 0], 'S', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterTop');
-            img = insertText(img, [sz/2 sz], 'I', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterBottom');
-            img = insertText(img, [5 sz/2], 'L', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterTop');
-            img = insertText(img, [sz-5 sz/2], 'R', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterTop');
-        end
 
-        function img = create_coronal_image(app)
-            app.CoronalData = zeros(320,320,3,app.YSliceMax, 'uint8');
-            % returns a 320x320x3 array
-            for slice = app.AbsLowerBound:app.YSliceMax
-                app.YSlice = slice;
-                app.CoronalData(:,:,:,slice) = permute(cat(2, app.MAGR(:,app.YSlice,:), ...
-                                                                app.MAGG(:,app.YSlice,:), ...
-                                                                app.MAGB(:,app.YSlice,:)), ...
-                                                                [3 1 2]);
+    % initialization methods
+    methods (Access = ?BaseController, Static)
+
+        function [x_slice, y_slice, z_slice] = initializeSlices(args)
+            arguments
+                args.MAGr;
             end
-            app.init_slices();
-            img = app.CoronalData(:,:,:,app.YSlice);
-            sz = size(img, 1);
-            img = insertText(img, [sz/2 0], 'S', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterTop');
-            img = insertText(img, [sz/2 sz], 'I', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterBottom');
-            img = insertText(img, [5 sz/2], 'A', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterTop');
-            img = insertText(img, [sz-5 sz/2], 'P', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterTop');
+            
+            x_slice = floor(size(args.MAGr, 1)/2);
+            y_slice = floor(size(args.MAGr, 2)/2);
+            z_slice = floor(size(args.MAGr, 3)/2);
         end
         
-        function img = create_axial_image(app)
-            app.AxialData = zeros(320,320,3,app.ZSliceMax, 'uint8');
-            % returns a 320x320x3 array
-            for slice = app.AbsLowerBound:app.ZSliceMax
-                app.ZSlice = slice;
-                app.AxialData(:,:,:,slice) = cat(3, app.MAGR(:,:,app.ZSlice), ...
-                                                      app.MAGG(:,:,app.ZSlice), ...
-                                                      app.MAGB(:,:,app.ZSlice));
+        function [x_max, y_max, z_max] = initializeSliceMax(args)
+            arguments
+                args.MAGr;
             end
-            app.init_slices();
-            img = app.AxialData(:,:,:,app.ZSlice);
-            sz = size(img, 1);
-            img = insertText(img, [sz/2 0], 'A', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterTop');
-            img = insertText(img, [sz/2 sz], 'P', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterBottom');
-            img = insertText(img, [5 sz/2], 'L', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterTop');
-            img = insertText(img, [sz-5 sz/2], 'R', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterTop');
+            
+            x_max = size(args.MAGr, 1);
+            y_max = size(args.MAGr, 2);
+            z_max = size(args.MAGr, 3);
         end
         
-        function img = updateSagittalImage(app)
-            img = app.SagittalData(:,:,:,app.XSlice);
+        function data = initializeMAGrgb(args)
+            arguments
+                args.MAG;
+                args.MAGmax;
+                args.Segment;
+                args.Map;
+            end
+            
+            data = im2uint8(args.MAG/args.MAGmax);
+            data(find(args.Segment)) = args.map;
+            data = data(end:-1:1,:,end:-1:1);
+            data = data(:,:,end:-1:1);
+        end
+        
+    end
+    
+    % image creation
+    methods (Access = ?BaseController, Static)
+
+        function data = initializeSagittalData(args)
+            arguments
+                args.XMax;
+                args.AbsLowerBound;
+                args.MAGr;
+                args.MAGg;
+                args.MAGb;
+            end
+            
+            data = zeros(320,320,3,args.XMax, 'uint8');
+            
+            % returns a 320x320x3 array
+            for slice = args.AbsLowerBound:args.XMax
+                data(:,:,:,slice) = permute(cat(1, args.MAGr(slice,:,:), ...
+                                                   args.MAGg(slice,:,:), ...
+                                                   args.MAGb(slice,:,:)), ...
+                                                   [3 2 1]);
+            end
+        end
+        
+        function data = initializeCoronalData(args)
+            arguments
+                args.YMax;
+                args.AbsLowerBound;
+                args.MAGr;
+                args.MAGg;
+                args.MAGb;
+            end
+            
+            data = zeros(320,320,3,args.YMax, 'uint8');
+            
+            % returns a 320x320x3 array
+            for slice = args.AbsLowerBound:args.YMax
+                data(:,:,:,slice) = permute(cat(2, args.MAGr(:,slice,:), ...
+                                                   args.MAGg(:,slice,:), ...
+                                                   args.MAGb(:,slice,:)), ...
+                                                   [3 1 2]);
+            end
+        end
+        
+        function data = initializeAxialData(args)
+            arguments
+                args.ZMax;
+                args.AbsLowerBound;
+                args.MAGr;
+                args.MAGg;
+                args.MAGb;
+            end
+            
+            data = zeros(320,320,3,args.ZMax, 'uint8');
+            
+            % returns a 320x320x3 array
+            for slice = args.AbsLowerBound:args.ZMax
+                data(:,:,:,slice) = cat(3, args.MAGr(:,:,slice), ...
+                                           args.MAGg(:,:,slice), ...
+                                           args.MAGb(:,:,slice));
+            end
+        end
+        
+        function img = updateSagittalImage(args)
+            arguments
+                args.SagittalData;
+                args.XSlice;
+            end
+            % TODO: can probably make the text locations a constant
+            
+            img = args.SagittalData(:,:,:,args.XSlice);
 			img = insertText(img, [sz/2 0], 'S', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterTop');
             img = insertText(img, [sz/2 sz], 'I', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterBottom');
             img = insertText(img, [5 sz/2], 'L', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterTop');
             img = insertText(img, [sz-5 sz/2], 'R', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterTop');
         end
         
-        function img = updateCoronalImage(app)
-            img = app.CoronalData(:,:,:,app.YSlice);
+        function img = updateCoronalImage(args)
+            arguments
+                args.CoronalData;
+                args.YSlice;
+            end
+            
+            img = args.CoronalData(:,:,:,args.YSlice);
 			sz = size(img, 1);
             img = insertText(img, [sz/2 0], 'S', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterTop');
             img = insertText(img, [sz/2 sz], 'I', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterBottom');
@@ -79,47 +129,44 @@ classdef VesselSelectionController < handle
             img = insertText(img, [sz-5 sz/2], 'P', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterTop');
         end
         
-        function img = updateAxialImage(app)
-            img = app.AxialData(:,:,:,app.ZSlice);
-			sz = size(img, 1);
+        function img = updateAxialData(args)
+            arguments
+                args.AxialData;
+                args.ZSlice;
+            end
+            
+            img = args.AxialData(:,:,:,args.ZSlice);
+            sz = size(img, 1);
             img = insertText(img, [sz/2 0], 'A', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterTop');
             img = insertText(img, [sz/2 sz], 'P', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterBottom');
             img = insertText(img, [5 sz/2], 'L', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterTop');
             img = insertText(img, [sz-5 sz/2], 'R', 'BoxColor', 'black', 'BoxOpacity', 1, 'TextColor', 'white', 'AnchorPoint', 'CenterTop');
         end
         
+    end
+    
+    % crosshairs
+    methods (Access = public, Static)
         
         % create crosshairs
-        function create_sagittal_crosshairs(app)
-            x_pos = size(app.SagittalImage.CData, 1)/2;
-            y_pos = size(app.SagittalImage.CData, 2)/2;
-            app.SagittalCrosshairs = drawcrosshair('Parent', app.SagittalAxes, 'Position', [x_pos y_pos], 'LineWidth', 1, 'Color', 'g');
-            % TODO: delete contextmenu???
-        end
-        
-        function create_coronal_crosshairs(app)
-            x_pos = size(app.CoronalImage.CData, 1)/2;
-            y_pos = size(app.CoronalImage.CData, 2)/2;
-            app.CoronalCrosshairs = drawcrosshair('Parent', app.CoronalAxes, 'Position', [x_pos y_pos], 'LineWidth', 1, 'Color', 'g');
-        end
-        
-        function create_axial_crosshairs(app)
-            x_pos = size(app.AxialImage.CData, 1)/2;
-            y_pos = size(app.AxialImage.CData, 2)/2;
-            app.AxialCrosshairs = drawcrosshair('Parent', app.AxialAxes, 'Position', [x_pos y_pos], 'LineWidth', 1, 'Color', 'g');
+        function crosshairs = createCrosshairs(args)
+            arguments
+                args.Axes;
+                args.Image;
+            end
+            
+            x_pos = size(args.Image.CData, 1)/2;
+            y_pos = size(args.Image.CData, 2)/2;
+            crosshairs = drawcrosshair('Parent', args.Axes, 'Position', [x_pos y_pos], 'LineWidth', 1, 'Color', 'g');
         end
         
         % create crosshair listeners
-        function create_sagittal_crosshair_listener(app)
-            addlistener(app.SagittalCrosshairs, 'MovingROI', @(src,data)app.move_crosshairs(src, data));
-        end
-        
-        function create_coronoal_crosshair_listener(app)
-            addlistener(app.CoronalCrosshairs, 'MovingROI', @(src,data)app.move_crosshairs(src, data));
-        end
-        
-        function create_axial_crosshair_listener(app)
-            addlistener(app.AxialCrosshairs, 'MovingROI', @(src,data)app.move_crosshairs(src, data));
+        function createCrosshairsListener(args)
+            arguments
+                args.Crosshairs;
+            end
+            
+            addlistener(args.SagittalCrosshairs, 'MovingROI', @(src,data)VesselSelectionController.moveCrosshairs(src, data));
         end
 
     end
@@ -135,36 +182,36 @@ classdef VesselSelectionController < handle
             app.init_mx();
             app.update_coordinate_labels();
             
-            % create images
-            img_ = app.create_sagittal_image();
-            app.SagittalImage = imshow(img_, 'Parent', app.SagittalAxes);
+%             % create images
+%             img_ = app.create_sagittal_image();
+%             app.SagittalImage = imshow(img_, 'Parent', app.SagittalAxes);
+% 
+%             img_ = app.create_coronal_image();
+%             app.CoronalImage = imshow(img_, 'Parent', app.CoronalAxes);
+%             
+%             img_ = app.create_axial_image();
+%             app.AxialImage = imshow(img_, 'Parent', app.AxialAxes);
 
-            img_ = app.create_coronal_image();
-            app.CoronalImage = imshow(img_, 'Parent', app.CoronalAxes);
+%             % 'locks' the image to prevent accidental moving
+%             disableDefaultInteractivity(app.SagittalAxes);
+%             disableDefaultInteractivity(app.CoronalAxes);
+%             disableDefaultInteractivity(app.AxialAxes);
+%             
+%             % create xhairs
+%             app.create_sagittal_crosshairs();
+%             app.create_coronal_crosshairs();
+%             app.create_axial_crosshairs();
+%             
+%             % create xhairs listeners
+%             app.create_sagittal_crosshair_listener();
+%             app.create_coronoal_crosshair_listener();
+%             app.create_axial_crosshair_listener();
             
-            img_ = app.create_axial_image();
-            app.AxialImage = imshow(img_, 'Parent', app.AxialAxes);
-
-            % 'locks' the image to prevent accidental moving
-            disableDefaultInteractivity(app.SagittalAxes);
-            disableDefaultInteractivity(app.CoronalAxes);
-            disableDefaultInteractivity(app.AxialAxes);
-            
-            % create xhairs
-            app.create_sagittal_crosshairs();
-            app.create_coronal_crosshairs();
-            app.create_axial_crosshairs();
-            
-            % create xhairs listeners
-            app.create_sagittal_crosshair_listener();
-            app.create_coronoal_crosshair_listener();
-            app.create_axial_crosshair_listener();
-            
-            % assign context menus to images
-            app.SagittalImage.ContextMenu = app.ContextMenu;
-            app.CoronalImage.ContextMenu = app.ContextMenu;
-            app.AxialImage.ContextMenu = app.ContextMenu;
-            
+%             % assign context menus to images
+%             app.SagittalImage.ContextMenu = app.ContextMenu;
+%             app.CoronalImage.ContextMenu = app.ContextMenu;
+%             app.AxialImage.ContextMenu = app.ContextMenu;
+%             
             % load data, if present
             app.load_();
         end
