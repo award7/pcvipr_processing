@@ -1,21 +1,4 @@
 classdef VesselSelectionView < matlab.apps.AppBase
-
-    % todo: move to model
-    properties
-        SagittalImage;
-        CoronalImage;
-        AxialImage;
-        AbsLowerBound = 1;
-        XSliceMax;
-        YSliceMax;
-        ZSliceMax;
-        XCoordinate;
-        YCoordinate;
-        ZCoordinate;
-        XSlice;
-        YSlice;
-        ZSlice;
-    end
     
     % figure layout properties
     properties (Access = private)
@@ -27,7 +10,7 @@ classdef VesselSelectionView < matlab.apps.AppBase
     end
     
     % table
-    properties (Access = public)
+    properties (Access = {?BaseController, ?VesselSelectionView})
         VesselTable                        matlab.ui.control.Table
     end
     
@@ -37,7 +20,7 @@ classdef VesselSelectionView < matlab.apps.AppBase
     end
     
     % axes and related objects
-    properties (Access = public)
+    properties (Access = {?BaseController, ?VesselSelectionView})
         SagittalAxes                       matlab.ui.control.UIAxes
         CoronalAxes                        matlab.ui.control.UIAxes
         AxialAxes                          matlab.ui.control.UIAxes
@@ -50,7 +33,7 @@ classdef VesselSelectionView < matlab.apps.AppBase
     end
     
     % labels
-    properties (Access = public)
+    properties (Access = {?BaseController, ?VesselSelectionView})
         XLabel                             matlab.ui.control.Label
         YLabel                             matlab.ui.control.Label
         ZLabel                             matlab.ui.control.Label
@@ -78,13 +61,16 @@ classdef VesselSelectionView < matlab.apps.AppBase
         NondominantTransvereSMenuButton    matlab.ui.container.Menu
     end
     
-    % App creation and deletion
-    methods (Access = public)
+    % constructor
+    methods (Access = ?BaseController)
 
-        % Construct app
         function app = VesselSelectionView(controller)
-            app.UIFigure = controller.View.UIFigure;
+            app.UIFigure = controller.BaseView.UIFigure;
             app.createComponents(controller);
+            
+            if nargout == 0
+                clear app;
+            end
         end
    
     end
@@ -415,9 +401,5 @@ classdef VesselSelectionView < matlab.apps.AppBase
         end
         
     end
-    
-    % getters
-    
-    % setters
     
 end

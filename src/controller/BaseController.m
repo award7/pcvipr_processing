@@ -22,6 +22,7 @@ classdef BaseController < handle
 
     %}
     
+    % models & base view
     properties (Access = public)
         BaseView;
         BaseModel;
@@ -31,6 +32,7 @@ classdef BaseController < handle
         VesselSelectionModel;
     end
     
+    % state
     properties (Access = private)
         State   AppState;
     end
@@ -276,11 +278,81 @@ classdef BaseController < handle
         
         function vesselSelectionMenuButtonCallback(self, src, evt)
             % create model
-            % self.VesselSelectionModel = VesselSelectionModel();
-            % TODO: set model props
+            if isempty(self.VesselSelectionModel)
+                % assign the VesselSelectionModel object to the VesselSelectionModel property of this class
+                self.VesselSelectionModel = VesselSelectionModel();
+                
+                % init slices
+                [x_slice, y_slice, z_slice] = VesselSelectionController.initializeSlices();
+                self.VesselSelectionModel.setXSlice(x_slice);
+                self.VesselSelectionModel.setYSlice(y_slice);
+                self.VesselSelectionModel.setZSlice(z_slice);
+                
+                % init slice maxes
+                [x_max, y_max, z_max] = VesselSelectionController.initializeSliceMax();
+                self.VesselSelectionModel.setXSliceMax(x_max);
+                self.VesselSelectionModel.setYSliceMax(y_max);
+                self.VesselSelectionModel.setZSliceMax(z_max);
+            end
             
-            % create view
-            % VesselSelectionView(self);
+            %%% create view
+            view = VesselSelectionView(self);
+            
+            %%% initialize MAG RGB
+            args.MAG = self.ViprModel.MAG;
+            args.MAGmax = self.VesselSelectionModel.MAGmax;
+            args.Segment = self.ViprModel.Segment;
+            
+            % r
+            args.Map = self.VesselSelectionModel.MAGr();
+            args_array = namedargs2cell(args);
+            data = VesselSelectionController.initializeMAGrgb(args_array{:});
+            self.VesselSelectionModel.setMAGr(data);
+            
+            % g
+            args.Map = self.VesselSelectionModel.MAGg();
+            args_array = namedargs2cell(args);
+            data = VesselSelectionController.initializeMAGrgb(args_array{:});
+            self.VesselSelectionModel.setMAGg(data);
+            
+            % b
+            args.Map = self.VesselSelectionModel.MAGb();
+            args_array = namedargs2cell(args);
+            data = VesselSelectionController.initializeMAGrgb(args_array{:});
+            self.VesselSelectionModel.setMAGb(data);
+            
+            %%% setup sagittal image
+            % create images, crosshairs and listeners for each image
+            args.XMax;
+            args.AbsLowerBound;
+            args.MAGrgb;
+            
+            data = VesselSelectionController.initializeSagittalData();
+            self.VesselSelectionModel.setSagittalData(data);
+            slice_data = VesselSelectionController.updateSagittalImage();
+            img = imshow(slice_data, 'Parent', view.SagittalAxes);
+            crosshairs = VesselSelectionController.createCrosshairs();
+            VesselSelectionController.createCrosshairsListener();
+            img.ContextMenu = view.ContextMenu;
+            
+            %%% setup coronal image
+            % create images, crosshairs and listeners for each image
+            % data = VesselSelectionController.initializeCoronalData();
+            % self.VesselSelectionModel.setCoronalData(data);
+            % slice_data = VesselSelectionController.updateCoronalImage();
+
+            % setup axial image
+            % create images, crosshairs and listeners for each image
+            % VesselSelectionController.initializeAxialData();
+            % self.VesselSelectionModel.setAxialData(data);
+            % slice_data = VesselSelectionController.updateAxialData();
+
+            % 'locks' the image to prevent accidental moving
+            disableDefaultInteractivity(view.SagittalAxes);
+            % disableDefaultInteractivity(view.CoronalAxes);
+            % disableDefaultInteractivity(view.AxialAxes);
+
+            % update coordinate labels
         end
         
         function segmentVesselsMenuButtonCallback(self, src, evt)
@@ -649,7 +721,7 @@ classdef BaseController < handle
             
             args_array = namedargs2cell(args);
             correction_factor = BackgroundPhaseCorrection.polyCorrection(args_array{:});
-            self.BackgroundPhaseCorrectionModel.setCorrectionFactor(correction_factor);
+            self.ViprModel.setCorrectionFactor(correction_factor);
             clear args;
             
             %%% calculate time MIP
@@ -687,47 +759,18 @@ classdef BaseController < handle
             disp(evt);
         end
         
-        function vsDoneButtonPushed(self, src, evt)
+        function vsToolbarValueChanged(self, src, evt)
             disp(evt);
         end
         
         function vsVesselTableCellSelection(self, src, evt)
             disp(evt);
         end
-        
-        function vsToolbarValueChanged(self, src, evt)
+                
+        function vsDoneButtonPushed(self, src, evt)
             disp(evt);
         end
         
-        %%% may not constitute callbacks
-        % TODO: move to separate private methods????
-%         function vsInitializeSlices(self)
-%             % todo: get MAGr argument
-%             self.VesselSelectionModel.setXSlice(floor(size(MAGR, 1)/2));
-%             self.VesselSelectionModel.setYSlice(floor(size(MAGR, 2)/2));
-%             self.VesselSelectionModel.setXSlice(floor(size(MAGR, 3)/2));
-%         end
-%         
-%         function vsInitializeSliceMax(self)
-%             % todo: get MAGr argument
-%             self.VesselSelectionModel.setXSliceMax(size(MAGR, 1));
-%             self.VesselSelectionModel.setYSliceMax(size(MAGR, 2));
-%             self.VesselSelectionModel.setZSliceMax(size(MAGR, 3));
-%         end
-%         
-%         function vsInitializeSagittalData(self)
-%             self.SagittalData = zeros(320,320,3,self.XSliceMax, 'uint8');
-%             
-%             % returns a 320x320x3 array
-%             for slice = self.AbsLowerBound:self.XSliceMax
-%                 self.XSlice = slice;
-%                 self.SagittalData(:,:,:,slice) = permute(cat(1, self.MAGR(self.XSlice,:,:), ...
-%                                                                self.MAGG(self.XSlice,:,:), ...
-%                                                                self.MAGB(self.XSlice,:,:)), ...
-%                                                                [3 2 1]);
-%             end
-%         end
-%         
     end
     
     % callbacks from Vessel3DView
